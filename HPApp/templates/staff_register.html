@@ -1,0 +1,14 @@
+<form method="POST">
+    {% csrf_token %}
+    
+    <label for="F_name">First Name:</label>
+    <input type="text" name="F_name" required>
+
+    <label for="L_name">Last Name:</label>
+    <input type="text" name="L_name" required>
+
+    <label for="staff_type">Staff Type:</label>
+    <input type="text" name="staff_type" required>
+
+    <button type="submit">Register Staff</button>
+</form>

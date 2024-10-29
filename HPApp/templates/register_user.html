@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Register User</title>
+</head>
+<body>
+    <h2>Register</h2>
+    <form method="post">
+        {% csrf_token %}
+        <label for="email">Email:</label>
+        <input type="email" name="email" required><br>
+
+        <label for="password">Password:</label>
+        <input type="password" name="password" required><br>
+
+        <label for="role">Role:</label>
+        <select name="role" required>
+            <option value="patient">Patient</option>
+            <option value="doctor">Doctor</option>
+            <option value="staff">Staff</option>
+        </select><br>
+
+        <button type="submit">Next</button>
+    </form>
+</body>
+</html>
