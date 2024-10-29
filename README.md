@@ -1,3 +1,5 @@
+![Uploading image.png…]()
+
 Members:
   Bolarde, Miklos Kaiser A.
   Flores, Adrian Ash D. 
