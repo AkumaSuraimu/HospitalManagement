@@ -142,6 +142,7 @@ def register_staff(request):
             return redirect('staff_LP')  # Redirect to login after successful registration
 
     return render(request, 'staff_register.html')
+
 @login_required
 def register_doctor(request):
 
@@ -199,6 +200,7 @@ def register_patient(request):
             return redirect('patient_LP')  # Redirect after successful registration
 
     return render(request, 'patient_register.html')
+
 def login_view(request):
     if request.method == 'POST':
         email = request.POST.get('email')
@@ -227,3 +229,80 @@ def login_view(request):
         return render(request, 'login.html', {'error': error})
 
     return render(request, 'login.html')
+
+@login_required
+def staff_viewBR(request):
+    billing_records = models.Billing.objects.all()
+    
+    return render(request, 'staff_viewBR.html', {'billing_records': billing_records})
+
+@login_required
+def staff_addbilling(request):
+    try:
+        staff = models.Staff.objects.get(user = request.user)
+    except models.Staff.DoesNotExist:
+        return redirect('staff_LP')
+    
+    if request.method == 'POST':
+        bill_date = request.POST.get('bill_date')
+        bill_amount = request.POST.get('bill_amount')
+        patient_id = request.POST.get('patient_id')
+        department_id = request.POST.get('department_id')
+        
+        if bill_date and bill_amount and patient_id and department_id:
+            patient = models.Patient.objects.get(id = patient_id)
+            department = models.Department.objects.get(id = department_id)
+            
+            billing = models.Billing.objects.create(
+                bill_date = bill_date,
+                bill_amount = bill_amount,
+                patient = patient,
+                staff = staff,
+                department = department
+            )
+            return redirect('staff_viewBR')
+        
+    patients = models.Patient.objects.all()
+    departments = models.Department.objects.all()
+        
+    return render(request, 'staff_addbilling', {
+        'patients': patients,
+        'departments': departments,}
+    )
+
+@login_required
+def staff_viewrooms(request):
+    rooms = models.Room.objects.all()
+    
+    return render(request, 'staff_viewrooms.html', {'rooms': rooms})
+
+@login_required
+def staff_addroom(request):
+    try:
+        staff = models.Staff.objects.get(user = request.user)
+    except models.Staff.DoesNotExist:
+        return redirect('staff_LP')
+    
+    if request.method == 'POST':
+        room_type = request.POST.get('room_type')
+        room_price = request.POST.get('room_price')
+        department_id = request.POST.get('department_id')
+        
+        if room_type and room_price and department_id:
+            department = models.Department.objects.get(id = department_id)
+            
+            models.Room.objects.create(
+                room_type = room_type,
+                room_price = room_price,
+                department = department
+            )
+            success_message = "Room added successfully!"
+            
+            return render(request, 'staff_addroom', {
+                'success_message': success_message,
+                'departments': models.Department.objects.all()
+            })
+        
+    departments = models.Department.objects.all()
+        
+    return render(request, 'staff_addbilling', {'departments': departments})

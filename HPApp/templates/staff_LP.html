@@ -36,11 +36,11 @@
 <body>
     <nav>
         <div>
-            <a href="#">Home</a>
-            <a href="#">Add Room</a>
-            <a href="#">Add Billing</a>
-            <a href="#">View Rooms</a>
-            <a href="#">View Billing Records</a>
+            <a href="{% url 'staff_LP' %}">Home</a>
+            <a href="{% url 'staff_addroom' %}">Add Room</a>
+            <a href="{% url 'staff_addbilling' %}">Add Billing</a>
+            <a href="{% url 'staff_viewrooms' %}">View Rooms</a>
+            <a href="{% url 'staff_viewBR' %}">View Billing Records</a>
             <a href="#">Doctor Dashboard</a>
             <a href="#">Patient Dashboard</a>
         </div>
