@@ -231,13 +231,13 @@ def login_view(request):
     return render(request, 'login.html')
 
 @login_required
-def staff_viewBR(request):
+def staff_view_BR(request):
     billing_records = models.Billing.objects.all()
     
-    return render(request, 'staff_viewBR.html', {'billing_records': billing_records})
+    return render(request, 'staff_view_BR.html', {'billing_records': billing_records})
 
 @login_required
-def staff_addbilling(request):
+def staff_add_billing(request):
     try:
         staff = models.Staff.objects.get(user = request.user)
     except models.Staff.DoesNotExist:
@@ -265,19 +265,19 @@ def staff_addbilling(request):
     patients = models.Patient.objects.all()
     departments = models.Department.objects.all()
         
-    return render(request, 'staff_addbilling', {
+    return render(request, 'staff_add_billing.html', {
         'patients': patients,
         'departments': departments,}
     )
 
 @login_required
-def staff_viewrooms(request):
+def staff_view_rooms(request):
     rooms = models.Room.objects.all()
     
-    return render(request, 'staff_viewrooms.html', {'rooms': rooms})
+    return render(request, 'staff_view_rooms.html', {'rooms': rooms})
 
 @login_required
-def staff_addroom(request):
+def staff_add_room(request):
     try:
         staff = models.Staff.objects.get(user = request.user)
     except models.Staff.DoesNotExist:
@@ -305,4 +305,22 @@ def staff_addroom(request):
         
     departments = models.Department.objects.all()
         
-    return render(request, 'staff_addbilling', {'departments': departments})
+    return render(request, 'staff_add_room.html', {'departments': departments})
+
+## def patient_book_appointment(request):
+    try:
+        patient = models.Patient.objects.get(user = request.user)
+    except models.Patient.DoesNotExist:
+        return redirect('patient_LP')
+    
+## def patient_med_record(request):
+    try:
+        patient = models.Patient.objects.get(user = request.user)
+    except models.Patient.DoesNotExist:
+        return redirect('patient_LP')
+    
+## def patient_view_billing(request):
+    try:
+        patient = models.Patient.objects.get(user = request.user)
+    except models.Patient.DoesNotExist:
+        return redirect('patient_LP')
