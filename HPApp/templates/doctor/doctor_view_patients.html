@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Patients</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        nav {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+        }
+        nav a {
+            color: white;
+            text-decoration: none;
+            padding: 14px 20px;
+        }
+        nav a:hover {
+            background-color: #45a049;
+        }
+        .content {
+            padding: 15px;
+        }
+        h2 {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div>
+            <a href="{% url 'doctor_LP' %}">Home</a>
+            <a href="{% url 'doctor_check_appointments' %}">Check Appointment</a>
+            <a href="{% url 'doctor_view_patients' %}">View Patients</a>
+            <a href="{% url 'doctor_view_billing' %}">View Billing Records</a>
+            <a href="#">Staff Dashboard</a>
+            <a href="#">Patient Dashboard</a>
+        </div>
+        <a href="{% url 'logout' %}">Logout</a>
+    </nav>
+
+    <div class="content">
+        <h1>Welcome, Dr. {{ doctor.F_name }} {{ doctor.L_name }}</h1>
+        <h2>Specialization: {{ doctor.specialization }}</h2>
+        <h3>Logged-in User: {{ user }}</h3>
+
+        <h2>Patients</h2>
+        <ul>
+            {% for patient in patients %}
+                <li>{{ patient.F_name }} {{ patient.L_name }} - Age: {{ patient.age }}, Gender: {{ patient.gender }}</li>
+            {% empty %}
+                <li>No patients assigned.</li>
+            {% endfor %}
+        </ul>
+    </div>
+</body>
+</html>

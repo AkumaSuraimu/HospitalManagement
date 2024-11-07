@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Appointment Management</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        nav {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+        }
+        nav a {
+            color: white;
+            text-decoration: none;
+            padding: 14px 20px;
+        }
+        nav a:hover {
+            background-color: #45a049;
+        }
+        .content {
+            padding: 15px;
+        }
+        .form-container {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 600px;
+            margin: 20px auto;
+        }
+        .form-container label {
+            display: block;
+            margin-top: 10px;
+            }
+        .form-container input,
+        .form-container select,
+        .form-container button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        .form-container button {
+            background-color: #4caf50;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .form-container button:hover {
+            background-color: #45a049;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .message {
+            color: green;
+            font-weight: bold;
+            text-align: center;
+        }
+    </style>
+    <script>
+        function toggleForm(formId) {
+            const form = document.getElementById(formId);
+            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+        }
+    </script>
+</head>
+<body>
+    <nav>
+        <div>
+            <div>
+                <a href="{% url 'doctor_LP' %}">Home</a>
+                <a href="{% url 'doctor_check_appointments' %}">Check Appointment</a>
+                <a href="{% url 'doctor_view_patients' %}">View Patients</a>
+                <a href="{% url 'doctor_view_billing' %}">View Billing Records</a>
+                <a href="#">Staff Dashboard</a>
+                <a href="#">Patient Dashboard</a>
+            </div>
+        </div>
+        <a href="{% url 'logout' %}">Logout</a>
+    </nav>
+
+    <div class="content">
+        <h1>Appointment Management</h1>
+        {% if success_message %}
+            <div class="message">{{ success_message }}</div>
+        {% endif %}
+        <h2>Appointments</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Patient</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for appointment in schedules %}
+                <tr>
+                    <td>{{ appointment.date }}</td>
+                    <td>{{ appointment.time }}</td>
+                    <td>{{ appointment.patient.L_name }}, {{ appointment.patient.F_name}}</td>
+                    <td>
+                        <form method="GET" action="{% url 'doctor_check_appointments' %}" style="display:inline;">
+                            <input type="hidden" name="edit_appointment" value="{{ appointment.id }}">
+                            <button type="submit">Edit</button>
+                        <form method="POST" action="{% url 'doctor_check_appointments' %}" style="display:inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="delete_appointment" value="1">
+                            <input type="hidden" name="appointment_id" value="{{ appointment.id }}">
+                            <button type="submit" onclick="return confirm('Are you sure you want to delete this appointment?');">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="4">No appointments booked for you right now.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <h2>{% if selected_appointment %}Update{% else %}Add{% endif %} Appointment</h2>
+        <div class="form-container">
+            <form method="POST" action="{% url 'doctor_check_appointments' %}">
+                {% csrf_token %}
+                {% if selected_appointment %}
+                    <input type="hidden" name="update_appointment" value="1">
+                    <input type="hidden" name="appointment_id" value="{{ selected_appointment.id }}">
+                {% else %}
+                    <input type="hidden" name="add_appointment" value="1">
+                {% endif %}
+
+                <label for="date">Appointment Date</label>
+                <input type="date" id="date" name="date" value="{{ selected_appointment.date }}" required>
+
+                <label for="time">Appointment Time</label>
+                <input type="time" id="time" name="time" value="{{ selected_appointment.time }}" required>
+
+                <label for="patient">Appointed Patient</label>
+                <select id="patient" name="patient" required>
+                    {% for department in departments %}
+                        <option value="{{ patient.id }}"
+                            {% if selected_appointment and selected_appointment.patient.id == patient.id %}
+                                selected
+                            {% endif %}>
+                                {{ patient.id }} - {{ patient.L_name }}, {{ patient.F_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <button type="submit">{% if selected_appointment %}Update{% else %}Add{% endif %} Appointment</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
