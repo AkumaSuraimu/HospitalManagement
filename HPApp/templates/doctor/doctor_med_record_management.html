@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Doctor Appointment Management</title>
+    <title>Doctor Medical Record Management</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -103,69 +103,63 @@
     </nav>
 
     <div class="content">
-        <h1>Appointment Management</h1>
+        <h1>Medical Record Management</h1>
         {% if success_message %}
             <div class="message">{{ success_message }}</div>
         {% endif %}
-        <h2>Appointments</h2>
+        <h2>Medical Records</h2>
         <table>
             <thead>
                 <tr>
-                    <th>Date</th>
-                    <th>Time</th>
                     <th>Patient</th>
+                    <th>Date</th>
+                    <th>Details</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
-                {% for appointment in appointments %}
+                {% for med_record in med_records %}
                 <tr>
-                    <td>{{ appointment.date }}</td>
-                    <td>{{ appointment.time }}</td>
-                    <td>{{ appointment.patient.L_name }}, {{ appointment.patient.F_name}}</td>
+                    <td>{{ med_record.patient.L_name }}, {{ med_record.patient.F_name}}</td>
+                    <td>{{ med_record.date }}</td>
+                    <td>{{ med_record.details }}</td>
                     <td>
-                        <form method="GET" action="{% url 'doctor_check_appointments' %}" style="display:inline;">
+                        <form method="GET" action="{% url 'doctor_med_record_management' %}" style="display:inline;">
                             {% csrf_token %}
-                            <input type="hidden" name="edit_appointment" value="{{ appointment.id }}">
+                            <input type="hidden" name="edit_med_record" value="{{ med_record.id }}">
                             <button type="submit">Edit</button>
                         </form>
-                        <form method="POST" action="{% url 'doctor_check_appointments' %}" style="display:inline">
+                        <form method="POST" action="{% url 'doctor_med_record_management' %}" style="display:inline">
                             {% csrf_token %}
-                            <input type="hidden" name="delete_appointment" value="1">
-                            <input type="hidden" name="appointment_id" value="{{ appointment.id }}">
-                            <button type="submit" onclick="return confirm('Are you sure you want to delete this appointment?');">Delete</button>
+                            <input type="hidden" name="delete_med_record" value="1">
+                            <input type="hidden" name="med_record_id" value="{{ med_record.id }}">
+                            <button type="submit" onclick="return confirm('Are you sure you want to delete this medical record?');">Delete</button>
                         </form>
                     </td>
                 </tr>
                 {% empty %}
                     <tr>
-                        <td colspan="4">No appointments booked for you right now.</td>
+                        <td colspan="4">No medical records assigned to you right now.</td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
-        <h2>{% if selected_appointment %}Update{% else %}Add{% endif %} Appointment</h2>
+        <h2>{% if selected_med_record %}Update{% else %}Add{% endif %} Medical Record</h2>
         <div class="form-container">
-            <form method="POST" action="{% url 'doctor_check_appointments' %}">
+            <form method="POST" action="{% url 'doctor_med_record_management' %}">
                 {% csrf_token %}
-                {% if selected_appointment %}
-                    <input type="hidden" name="update_appointment" value="1">
-                    <input type="hidden" name="appointment_id" value="{{ selected_appointment.id }}">
+                {% if selected_med_record %}
+                    <input type="hidden" name="update_med_record" value="1">
+                    <input type="hidden" name="med_record_id" value="{{ selected_med_record.id }}">
                 {% else %}
-                    <input type="hidden" name="add_appointment" value="1">
+                    <input type="hidden" name="add_med_record" value="1">
                 {% endif %}
 
-                <label for="date">Appointment Date</label>
-                <input type="date" id="date" name="date" value="{{ selected_appointment.date|date:'Y-m-d' }}" required>
-
-                <label for="time">Appointment Time</label>
-                <input type="time" id="time" name="time" value="{{ selected_appointment.time|time:'H:i' }}" required>
-
-                <label for="patient">Appointed Patient</label>
+                <label for="patient">Medical Record | Patient</label>
                 <select id="patient" name="patient_id" required>
                     {% for patient in patients %}
                         <option value="{{ patient.id }}"
-                            {% if selected_appointment and selected_appointment.patient.id == patient.id %}
+                            {% if selected_med_record and selected_med_record.patient.id == patient.id %}
                                 selected
                             {% endif %}>
                                 {{ patient.id }} - {{ patient.L_name }}, {{ patient.F_name }}
@@ -173,7 +167,13 @@
                     {% endfor %}
                 </select>
 
-                <button type="submit">{% if selected_appointment %}Update{% else %}Add{% endif %} Appointment</button>
+                <label for="time">Medical Record | Date</label>
+                <input type="date" id="date" name="date" value="{{ selected_med_record.date|date:'Y-m-d' }}" required>
+
+                <label for="details">Medical Record | Details</label>
+                <input type="text" id="details" name="details" value="{{ selected_med_record.details}}" required>
+
+                <button type="submit">{% if selected_med_record %}Update{% else %}Add{% endif %} Medical Record</button>
             </form>
         </div>
     </div>

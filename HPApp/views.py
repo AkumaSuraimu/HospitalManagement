@@ -449,6 +449,7 @@ def doctor_check_appointments(request):
     except models.Doctor.DoesNotExist:
         return redirect('doctor_LP')
     
+    patients = models.Patient.objects.filter(schedule__doctor = doctor).distinct()
     appointments = models.Schedule.objects.filter(doctor = doctor).order_by('date', 'time')
     
     success_message = ""
@@ -461,26 +462,28 @@ def doctor_check_appointments(request):
         except models.Schedule.DoesNotExist:
             success_message = "Selected appointment does not exist."
     
-    if request.method == 'POST' and 'add_room' in request.POST:
+    if request.method == 'POST' and 'add_appointment' in request.POST:
         date = request.POST.get('date')
         time = request.POST.get('time')
         patient_id = request.POST.get('patient_id')
         
         if date and time and patient_id:
             patient = models.Patient.objects.get(id = patient_id)
+            
             models.Schedule.objects.create(
                 date = date,
                 time = time,
                 doctor = doctor,
                 patient = patient
             )
+            
             success_message = "Appointment added successfully!"
     
-    if request.method == 'POST' and 'update_appointment' in request.method:
+    if request.method == 'POST' and 'update_appointment' in request.POST:
         appointment_id = request.POST.get('appointment_id')
         date = request.POST.get('date')
         time = request.POST.get('time')
-        patient_id = request.POST.get('patient')
+        patient_id = request.POST.get('patient_id')
         
         if appointment_id and date and time and patient_id:
             appointment = models.Schedule.objects.get(id = appointment_id)
@@ -494,7 +497,7 @@ def doctor_check_appointments(request):
             
             success_message = "Appointment updated successfully!"
     
-    if request.method == 'POST' and 'delete_appointment' in request.method:
+    if request.method == 'POST' and 'delete_appointment' in request.POST:
         appointment_id = request.POST.get('appointment_id')
         
         if appointment_id:
@@ -503,10 +506,11 @@ def doctor_check_appointments(request):
                 appointment.delete()
                 success_message = "Appointment deleted successfully!"
             except models.Schedule.DoesNotExist:
-                success_message - "Appointment not found!"
+                success_message = "Appointment not found!"
     
     return render(request, 'doctor/doctor_check_appointments.html', {
         'doctor': doctor,
+        'patients': patients,
         'appointments': appointments,
         'success_message': success_message,
         'selected_appointment': selected_appointment,
@@ -519,7 +523,7 @@ def doctor_view_patients(request):
     except models.Doctor.DoesNotExist:
         return redirect('doctor_LP')
     
-    patients = models.Patient.objects.filter(doctor = doctor).order_by('F_name, L_name')
+    patients = models.Patient.objects.all()
     
     return render(request, 'doctor/doctor_view_patients.html', {
         'doctor': doctor,
@@ -533,9 +537,89 @@ def doctor_view_billing(request):
     except models.Doctor.DoesNotExist:
         return redirect('doctor_LP')
     
-    billings = models.Billing.objects.filter(doctor = doctor).order_by('F_name', 'L_name')
+    
+    billings = models.Billing.objects.all()
     
     return render(request, 'doctor/doctor_view_billing.html', {
         'doctor': doctor,
         'billings': billings,
+    })
+    
+@login_required
+def doctor_med_record_management(request):
+    try:
+        doctor = models.Doctor.objects.get(user = request.user)
+    except models.Doctor.DoesNotExist:
+        return redirect('doctor_LP')
+    
+    success_message = ""
+    selected_med_record = None
+    
+    patients = models.Patient.objects.all()
+    med_records = models.MedicalRecord.objects.filter(doctor = doctor).order_by('date')
+    
+    if request.method == 'GET' and 'edit_med_record' in request.GET:
+        med_record_id = request.GET.get('edit_med_record')
+        
+        try:
+            selected_med_record = models.MedicalRecord.objects.get(id = med_record_id)
+        except models.MedicalRecord.DoesNotExist:
+            success_message = "Medical Record does not exist!"
+    
+    if request.method == 'POST' and 'add_med_record' in request.POST:
+        patient_id = request.POST.get('patient_id')
+        date = request.POST.get('date')
+        details = request.POST.get('details')
+        
+        if patient_id and date and details:
+            patient = models.Patient.objects.get(id = patient_id)
+            
+            models.MedicalRecord.objects.create(
+                patient = patient,
+                doctor = doctor,
+                date = date,
+                details = details
+            )
+            success_message = "Medical Record added successfully!"
+    
+    if request.method == 'POST' and 'update_med_record' in request.POST:
+        med_record_id = request.POST.get('med_record_id')
+        patient_id = request.POST.get('patient_id')
+        date = request.POST.get('date')
+        details = request.POST.get('details')
+        
+        if med_record_id and patient_id and date and details:
+            try:
+                med_record = models.MedicalRecord.objects.get(id = med_record_id)
+                patient = models.Patient.objects.get(id = patient_id)
+                
+                med_record.patient = patient
+                med_record.date = date
+                med_record.details = details
+                
+                med_record.save()
+                
+                success_message = "Medical Record updated successfully!"
+            except models.MedicalRecord.DoesNotExist:
+                success_message = "Medical Record does not exist."
+            except models.Patient.DoesNotExist:
+                success_message = "Patient does not exist."
+    
+    if request.method == 'POST' and 'delete_med_record' in request.POST:
+        med_record_id = request.POST.get('med_record_id')
+        
+        if med_record_id:
+            try:
+                med_record = models.MedicalRecord.objects.get(id = med_record_id)
+                med_record.delete()
+                success_message = "Medical Record deleted successfully!"
+            except models.MedicalRecord.DoesNotExist:
+                success_message = "Medical Record not found!"
+    
+    return render(request, 'doctor/doctor_med_record_management.html', {
+        'doctor': doctor,
+        'patients': patients,
+        'med_records': med_records,
+        'success_message': success_message,
+        'selected_med_record': selected_med_record,
     })

@@ -18,6 +18,7 @@ urlpatterns = [
     path('doctor/doctor_view_patients', views.doctor_view_patients, name='doctor_view_patients'),
     path('doctor/doctor_view_billing', views.doctor_view_billing, name='doctor_view_billing'),
     path('doctor/doctor_check_appointments', views.doctor_check_appointments, name='doctor_check_appointments'),
+    path('doctor/doctor_med_record_management', views.doctor_med_record_management, name='doctor_med_record_management'),
     
     path('patient/', views.patient_LP, name='patient_LP'),
     path('patient/booking', views.patient_book_appointment, name='patient_book_appointment'),
