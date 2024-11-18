@@ -332,7 +332,7 @@ def staff_room_management(request):
     if request.method == 'POST' and 'add_room' in request.POST:
         room_type = request.POST.get('room_type')
         room_price = request.POST.get('room_price')
-        department_id = request.POST.get('department')
+        department_id = request.POST.get('department_id')
         
         if room_type and room_price and department_id:
             department = models.Department.objects.get(id = department_id)
@@ -347,7 +347,7 @@ def staff_room_management(request):
         room_id = request.POST.get('room_id')
         room_type = request.POST.get('room_type')
         room_price = request.POST.get('room_price')
-        department_id = request.POST.get('department')
+        department_id = request.POST.get('department_id')
         
         if room_id and room_type and room_price and department_id:
             department = models.Department.objects.get(id = department_id)
@@ -435,11 +435,11 @@ def patient_view_billing(request):
     except models.Patient.DoesNotExist:
         return redirect('patient_LP')
     
-    billing = models.Billing.objects.filter(patient = patient).order_by('bill_date')
+    billing_records = models.Billing.objects.filter(patient = patient).order_by('bill_date')
     
     return render(request, 'patient/patient_view_billing.html', {
         'patient': patient,
-        'billing': billing,
+        'billing_records': billing_records,
     })
     
 @login_required

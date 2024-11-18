@@ -4,7 +4,7 @@
     <title>Register User</title>
 </head>
 <body>
-    <h2>Register</h2>
+    <h2>Register | <a href="{% url 'login' %}">Login</a></h2>
     <form method="post">
         {% csrf_token %}
         <label for="email">Email:</label>
