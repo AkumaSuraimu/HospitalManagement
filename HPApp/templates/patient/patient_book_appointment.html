@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        nav {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+        }
+        nav a {
+            color: white;
+            text-decoration: none;
+            padding: 14px 20px;
+        }
+        nav a:hover {
+            background-color: #45a049;
+        }
+        .content {
+            padding: 15px;
+        }
+        .form-container {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 600px;
+            margin: 20px auto;
+        }
+        .form-container label {
+            display: block;
+            margin-top: 10px;
+            }
+        .form-container input,
+        .form-container select,
+        .form-container button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        .form-container button {
+            background-color: #4caf50;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .form-container button:hover {
+            background-color: #45a049;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .message {
+            color: green;
+            font-weight: bold;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div>
+            <a href="{% url 'patient_LP' %}">Home</a>
+            <a href="{% url 'patient_book_appointment' %}">Book Appointment</a> 
+            <a href="{% url 'patient_med_record' %}">View Medical Records</a>
+            <a href="{% url 'patient_view_billing' %}">View Billing Information</a>
+        </div>
+        <a href="{% url 'logout' %}">Logout</a>
+    </nav>
+
+    <div class="content">
+        <h1>Welcome, {{ patient.F_name }} {{ patient.L_name }}</h1>
+        <h2>View and Book an Appointment</h2>
+
+        {% if success_message %}
+            <p style="color: green">{{ success_message }}</p>
+        {% endif %}
+
+        <h3>Existing Appointments</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Doctor</th>
+                    <th>Department</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for appointment in appointments %}
+                    <tr>
+                        <td>{{ appointment.date }}</td>
+                        <td>{{ appointment.time }}</td>
+                        <td>{{ appointment.doctor.F_name }} {{ appointment.doctor.L_name }}</td>
+                        <td>{{ appointment.doctor.department.dep_name }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="4">No appointments available.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <h3>Book a New Appointment</h3>
+        <div class="form-container">
+            <form method="POST" action="{% url 'patient_book_appointment' %}">
+                {% csrf_token %}
+                <label for="date">Date:</label>
+                <input type="date" id="date" name="date" required>
+
+                <label for="time">Time:</label>
+                <input type="time" id="time" name="time" required>
+
+                <label for="doctor">Select Doctor:</label>
+                <select id="doctor" name="doctor" required>
+                    {% for doctor in doctors %}
+                        <option value="{{ doctor.id }}">{{ doctor.F_name }} {{ doctor.L_name }} - {{ doctor.specialization }}</option>
+                    {% endfor %}
+                </select>
+
+                <button type="submit">Book Appointment</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

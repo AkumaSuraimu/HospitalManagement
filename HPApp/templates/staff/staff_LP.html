@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Dashboard</title>
+    <style>
+        body {
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 0;
+            }
+            nav {
+                background-color: #4CAF50;
+                color: white;
+                padding: 15px;
+                display: flex;
+                justify-content: space-between;
+            }
+            nav a {
+                color: white;
+                text-decoration: none;
+                padding: 14px 20px;
+            }
+            nav a:hover {
+                background-color: #45a049;
+            }
+            .content {
+                padding: 15px;
+            }
+            .form-container {
+                background-color: #f9f9f9;
+                padding: 20px;
+                border-radius: 8px;
+                max-width: 600px;
+                margin: 20px auto;
+            }
+            .form-container label {
+                display: block;
+                margin-top: 10px;
+            }
+            .form-container input,
+            .form-container select,
+            .form-container button {
+                width: 100%;
+                padding: 10px;
+                margin-top: 5px;
+                border-radius: 5px;
+                border: 1px solid #ccc;
+            }
+            .form-container button {
+                background-color: #4caf50;
+                color: white;
+                font-size: 16px;
+                cursor: pointer;
+            }
+            .form-container button:hover {
+                background-color: #45a049;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 20px;
+            }
+            table, th, td {
+                border: 1px solid #ddd;
+            }
+            th, td {
+                padding: 8px;
+                text-align: left;
+            }
+            th {
+                background-color: #4CAF50;
+                color: white;
+            }
+    </style>
+</head>
+<body>
+    <nav>
+        <div>
+            <a href="{% url 'staff_LP' %}">Home</a>
+            <a href="{% url 'staff_room_management' %}">Rooms</a>
+            <a href="{% url 'staff_billing_management' %}">Billing</a>
+            <a href="#">Doctor Dashboard</a>
+            <a href="#">Patient Dashboard</a>
+        </div>
+        <a href="{% url 'logout' %}">Logout</a>
+    </nav>
+
+    <div class="content">
+        <h1>Welcome, {{ staff.F_name }} {{ staff.L_name }}</h1>
+        <h2>Staff Type: {{ staff.staff_type }}</h2>
+        <h3>Logged-in User: {{ user }}</h3>
+        <div class="content">
+            <h2>Rooms Assigned</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Room Type</th>
+                        <th>Room Price</th>
+                        <th>Department</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for room in rooms %}
+                        <tr>
+                            <td>{{ room.room_type }}</td>
+                            <td>{{ room.room_price }}</td>
+                            <td>{{ room.department.dep_name }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="3">
+                                No rooms assigned to you.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div>
+        <h2>Billing Records</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Patient</th>
+                        <th>Amount</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in billing_records %}
+                        <tr>
+                            <td>{{ record.patient.L_name }}, {{ record.patient.F_name }}</td>
+                            <td>{{ record.bill_amount }}</td>
+                            <td>{{ record.bill_date }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="3">No billing records found.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

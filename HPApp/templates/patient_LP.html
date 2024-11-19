@@ -36,12 +36,10 @@
 <body>
     <nav>
         <div>
-            <a href="#">Home</a>
-            <a href="#">Book Appointment</a>
-            <a href="#">View Medical Records</a>
-            <a href="#">View Billing Information</a>
-            <a href="#">Staff Dashboard</a>
-            <a href="#">Doctor Dashboard</a>
+            <a href="{% url 'patient_LP' %}">Home</a>
+            <a href="{% url 'patient_bookappointment' %}">Book Appointment</a>
+            <a href="{% url 'patient_medrecord' %}">View Medical Records</a>
+            <a href="{% url 'patient_viewbilling' %}">View Billing Information</a>
         </div>
         <a href="{% url 'logout' %}">Logout</a>
     </nav>

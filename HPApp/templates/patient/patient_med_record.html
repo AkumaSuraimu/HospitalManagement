@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        nav {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+        }
+        nav a {
+            color: white;
+            text-decoration: none;
+            padding: 14px 20px;
+        }
+        nav a:hover {
+            background-color: #45a049;
+        }
+        .content {
+            padding: 15px;
+        }
+        h2 {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div>
+            <a href="{% url 'patient_LP' %}">Home</a>
+            <a href="{% url 'patient_book_appointment' %}">Book Appointment</a> 
+            <a href="{% url 'patient_med_record' %}">View Medical Records</a>
+            <a href="{% url 'patient_view_billing' %}">View Billing Information</a>
+        </div>
+        <a href="{% url 'logout' %}">Logout</a>
+    </nav>
+
+    <div class="content">
+        <h1>Welcome, {{ patient.F_name }} {{ patient.L_name }}</h1>
+        <h2>Age: {{ patient.age }} - Gender: {{ patient.gender }}</h2>
+        <h3>Logged-in User: {{ user }}</h3>
+
+        <h2>Medical History</h2>
+        <ul>
+            {% for record in medical_records %}
+                <li>Date: {{ record.date }}, Details: {{ record.details }}</li>
+            {% empty %}
+                <li>No medical records found.</li>
+            {% endfor %}
+        </ul>
+    </div>
+</body>
+</html>
