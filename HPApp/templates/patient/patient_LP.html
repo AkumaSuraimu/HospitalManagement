@@ -60,7 +60,7 @@
 
         <h2>Billing Records</h2>
         <ul>
-            {% for record in billing_records %}
+            {% for record in billings %}
                 <li>Date: {{ record.bill_date }}, Amount: {{ record.bill_amount }}</li>
             {% empty %}
                 <li>No billing records available.</li>
