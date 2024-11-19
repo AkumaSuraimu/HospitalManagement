@@ -64,10 +64,12 @@ def staff_LP(request):
         
         # Fetch billing records related to the staff
         billing_records = models.Billing.objects.filter(staff=staff)
+        rooms = models.Room.objects.all()
 
         context = {
             'staff': staff,
             'billing_records': billing_records,
+            'rooms': rooms,
         }
         return render(request, 'staff/staff_LP.html', context)
 
@@ -83,11 +85,13 @@ def patient_LP(request):
         # Fetch billing and schedule records related to the patient
         billings = models.Billing.objects.filter(patient=patient)
         appointments = models.Schedule.objects.filter(patient=patient)
+        medical_records = models.MedicalRecord.objects.filter(patient=patient)
         
         context = {
             'patient': patient,
             'billings': billings,
             'appointments': appointments,
+            'medical_records': medical_records,
         }
         return render(request, 'patient/patient_LP.html', context)
 
