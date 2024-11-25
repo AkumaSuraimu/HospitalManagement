@@ -5,22 +5,60 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, authenticate, logout
 from django.http import HttpResponse,Http404
 from . import models
+from django.http import JsonResponse
+from django.core.paginator import Paginator
 
 # Create your views here.
-def user_list(request):
-    
-    users = models.User.objects.all()
-    
-    doctors = models.Doctor.objects.select_related('user', 'staff').all()
-    patients = models.Patient.objects.select_related('user').all()
-    staff = models.Staff.objects.select_related('user').all()
+@login_required
+def get_user_details(request, user_id):
+    try:
+        user = get_object_or_404(models.User, id=user_id)
+        role_data = {}
+        
+        if user.role == "patient":
+            try:
+                patient = models.Patient.objects.get(user=user)
+                role_data = {
+                    "First Name": patient.F_name,
+                    "Last Name": patient.L_name,
+                    "Age": patient.age,
+                    "Birthday": patient.bday,
+                    "Gender": patient.gender,
+                    "Address": patient.address,
+                    "Phone": patient.phone,
+                    "Bloodgroup": patient.bloodgroup,
+                    "Room": patient.room.room_type if patient.room else "None",
+                }
+            except models.Patient.DoesNotExist:
+                return JsonResponse({"success": False, "error": "Patient data not found for this user"})
+        elif user.role == "staff":
+            try:
+                staff = models.Staff.objects.get(user=user)
+                role_data = {
+                    "First Name": staff.F_name,
+                    "Last Name": staff.L_name,
+                    "Staff Type": staff.staff_type,
+                }
+            except models.Staff.DoesNotExist:
+                return JsonResponse({"success": False, "error": "Staff data not found for this user"})
+        elif user.role == "doctor":
+            try:
+                doctor = models.Doctor.objects.get(user=user)
+                role_data = {
+                    "First Name": doctor.F_name,
+                    "Last Name": doctor.L_name,
+                    "Specialization": doctor.specialization,
+                    "Department": doctor.department.dep_name if doctor.department else "None",
+                }
+            except models.Doctor.DoesNotExist:
+                return JsonResponse({"success": False, "error": "Doctor data not found for this user"})
 
-    return render(request, 'user_list.html', {
-        'users': users,
-        'doctors': doctors,
-        'patients': patients,
-        'staff': staff,
-    })
+        
+        print(f"Role Data for user {user_id}: {role_data}")
+        
+        return JsonResponse({"success": True, "role_data": role_data, "role": user.role})
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)})
 
 def patient_register(request):
     return render(request, 'patient_register.html')
@@ -41,6 +79,14 @@ def delete_user(request):
     user.delete()
     
     return redirect('login')
+
+@login_required
+def delete_user(request, user_id):
+    user = get_object_or_404(models.User, id=user_id)
+    if user.delete():
+        return JsonResponse({'success': True, 'message': 'User deleted successfully'})
+    else:
+        return JsonResponse({'success': False, 'message': 'Error deleting user'}, status=500)
 
 @login_required
 def doctor_LP(request):
@@ -101,6 +147,24 @@ def patient_LP(request):
     except models.Patient.DoesNotExist:
         
         return render(request, 'patient_LP.html', {'error': 'No patient profile associated with this user.'})
+
+
+@login_required
+def admin_LP(request):
+    
+    users = models.User.objects.all()
+
+    
+    paginator = Paginator(users, 5)
+    page_number = request.GET.get('page')  
+    page_obj = paginator.get_page(page_number)  
+
+    
+    return render(request, 'admin_LP.html', {
+        'page_obj': page_obj,  
+        'logged_in_user': request.user,
+    })
+
 
 
 def register_user(request):
@@ -226,6 +290,8 @@ def login_view(request):
                 return redirect('doctor_LP')
             elif role == 'staff':
                 return redirect('staff_LP')
+            elif role == 'user':
+                return redirect('admin_LP')
             else:
                 error = "Invalid role."
         else:
