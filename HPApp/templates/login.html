@@ -3,22 +3,225 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
+    <title>Login Page with Navbar</title>
+    <style>
+        /* General styles */
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+
+        /* Navbar styles */
+        .navbar {
+            width: 98%;
+            background-color: #333;
+            color: #fff;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            position: fixed;
+            top: 0;
+            left: 0;
+        }
+
+        .navbar .logo {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #fff;
+            text-decoration: none;
+        }
+
+        .navbar .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .navbar .nav-links a {
+            color: #fff;
+            text-decoration: none;
+            font-size: 1em;
+            transition: color 0.3s;
+        }
+
+        .navbar .nav-links a:hover {
+            color: #ddd;
+        }
+
+        /* Container styles */
+        .container {
+            display: flex;
+            background-color: #fff;
+            border-radius: 15px;
+            box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            width: 900px;
+            height: 500px;
+            margin-top: 100px; /* Added to prevent overlap with navbar */
+        }
+
+        .login-panel {
+            padding: 40px;
+            width: 50%;
+            background-color: #f5f5f5;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .login-panel h2 {
+            font-size: 1.8em;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .login-panel p {
+            font-size: 0.9em;
+            margin-bottom: 20px;
+            color: #666;
+        }
+
+        .login-panel label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: block;
+            color: #333;
+        }
+
+        .login-panel input[type="email"],
+        .login-panel input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1em;
+            color: #333;
+            background-color: #f9f9f9;
+        }
+
+        .login-btn {
+            background-color: #333;
+            color: #fff;
+            border: none;
+            padding: 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            width: 100%;
+            transition: background-color 0.3s;
+        }
+
+        .login-btn:hover {
+            background-color: #555;
+        }
+
+        .register-panel {
+            width: 50%;
+            padding: 40px;
+            background-color: #333;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .register-panel h2 {
+            font-size: 1.8em;
+            margin-bottom: 10px;
+            color: #fff;
+        }
+
+        .register-panel p {
+            font-size: 0.9em;
+            margin-bottom: 20px;
+            color: #ddd;
+            text-align: center;
+        }
+
+        .create-account-btn {
+            background-color: transparent;
+            color: #fff;
+            border: 1px solid #fff;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            text-decoration: none;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .create-account-btn:hover {
+            background-color: #fff;
+            color: #333;
+        }
+
+        /* Logo */
+        .logo-img {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+        }
+
+        .logo-img img {
+            max-width: 60px;
+            border-radius: 50%;
+        }
+    </style>
 </head>
 <body>
-    <h1>Login</h1>
-    {% if error %}
-        <p style="color: red;">{{ error }}</p>
-    {% endif %}
-    <form method="POST" action="{% url 'login' %}">
-        {% csrf_token %}
-        <label for="email">Email:</label>
-        <input type="text" name="email" id="email" required><br>
+    <!-- Navbar -->
+    <div class="navbar">
+        <a href="#" class="logo">Hospital System</a>
+        <div class="nav-links">
+            <a href="#home">Home</a>
+            <a href="#about">About</a>
+            <a href="#contact">Contact</a>
+            <a href="#login">Login</a>
+        </div>
+    </div>
 
-        <label for="password">Password:</label>
-        <input type="password" name="password" id="password" required><br>
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Login Panel -->
+        <div class="login-panel">
+            <h2>Log in to your account</h2>
+            <p>Access your hospital management system dashboard. Enter your login details below to manage patients, view appointments, and more.</p>
+            
+            <form method="POST" action="{% url 'login' %}">
+                {% csrf_token %}
+                
+                <label for="email">Email address</label>
+                <input type="email" id="email" name="email" required>
 
-        <button type="submit">Login</button>
-    </form>
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required>
+
+                <button type="submit" class="login-btn">Log in</button>
+                {% if error %}
+                    <p style="color: red;">{{ error }}</p>
+                {% endif %}
+            </form>
+        </div>
+
+        <!-- Registration Panel -->
+        <div class="register-panel">
+            <h2>Create your new account</h2>
+            <p>Sign up for an account to access the hospital management system. Register as a doctor, nurse, or staff to start managing medical records and hospital operations.</p>
+            <a href="{% url 'register_user' %}" class="create-account-btn">Create an account</a>
+        </div>
+    </div>
+
+    <!-- Logo Outside Container -->
+    <div class="logo-img">
+        <img src="path_to_logo.png" alt="Logo">
+    </div>
 </body>
 </html>
