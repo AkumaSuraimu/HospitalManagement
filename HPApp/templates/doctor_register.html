@@ -72,12 +72,12 @@
             <label for="specialization">Specialization:</label>
             <input type="text" id="specialization" name="specialization" required>
 
-            <label for="department">Department:</label>
-            <select id="department" name="department" required>
-                {% for department in departments %}
-                    <option value="{{ department.id }}">{{ department.dep_name }}</option>
-                {% endfor %}
-            </select>
+    <label for="department">Department:</label>
+    <select name="department" required>
+        {% for department in departments %}
+            <option value="{{ department.id }}">{{ department.dep_name }}</option>
+        {% endfor %}
+    </select>
 
             <button type="submit">Register Doctor</button>
         </form>

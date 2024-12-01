@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            background-color: #f0f0f0;
+        }
+        .sidebar {
+            width: 250px;
+            background-color: #333;
+            color: #fff;
+            height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .profile {
+            text-align: left;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #555;
+            cursor: pointer;
+        }
+        .profile-pic {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            margin-bottom: 10px;
+            background-color: #555;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #fff;
+            overflow: hidden;
+        }
+        .profile-pic img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .sidebar-nav {
+            margin-top: 20px;
+        }
+        .sidebar-nav a {
+            display: block;
+            color: #fff;
+            text-decoration: none;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        .sidebar-nav a:hover {
+            background-color: #555;
+        }
+        .content {
+            flex-grow: 1;
+            padding: 40px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            margin: 20px;
+            border-radius: 8px;
+        }
+        h1, h2, h3 {
+            color: #333;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            background-color: #f9f9f9;
+            margin-bottom: 10px;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .profile-name{
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="profile" >
+            <a href="{% url 'patient_edit' %}" style="text-decoration: none;">
+                <div class="profile-pic">
+                    {% if patient.profile_image %}
+                        <img src="{{ patient.profile_image.url }}" alt="Patient's profile picture">
+                    {% else %}
+                        {{ patient.F_name|first }}{{ patient.L_name|first }}
+                    {% endif %}
+                </div>
+            </a>
+            <h3 class="profile-name">{{ patient.F_name }} {{ patient.L_name }}</h3>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="{% url 'patient_LP' %}">Home</a>
+            <a href="{% url 'patient_book_appointment' %}">Book Appointment</a> 
+            <a href="{% url 'patient_med_record' %}">View Medical Records</a>
+            <a href="{% url 'patient_view_billing' %}">View Billing Information</a>
+            <a href="{% url 'logout' %}">Logout</a>
+        </nav>
+    </div>
+
+    <div class="content">
+        <h1>Welcome, {{ patient.F_name}} {{ patient.L_name }}</h1>
+        <h2>Age: {{ patient.age }} - Gender: {{ patient.gender }}</h2>
+        <h3>Logged-in User: {{ user }}</h3>
+
+        <h2>Medical History</h2>
+        <ul>
+            {% for record in medical_records %}
+                <li>Date: {{ record.date }}, Details: {{ record.details }}</li>
+            {% empty %}
+                <li>No medical records found.</li>
+            {% endfor %}
+        </ul>
+
+        <h2>Billing Records</h2>
+        <ul>
+            {% for record in billing_records %}
+                <li>Date: {{ record.bill_date }}, Amount: {{ record.bill_amount }}</li>
+            {% empty %}
+                <li>No billing records available.</li>
+            {% endfor %}
+        </ul>
+    </div>
+</body>
+</html>

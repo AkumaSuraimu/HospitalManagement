@@ -72,6 +72,9 @@ class Doctor(models.Model):
 class Room(models.Model):
     room_type = models.CharField(max_length=100, default='Standard')
     room_price = models.IntegerField(default=0)
+    # occupied = models.BooleanField(default=False)
+    # patient = models.ForeignKey(Patient, on_delete=models.CASCASE, null=True, default=none)
+    # doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, null=True, default=none)
     department = models.ForeignKey(Department, on_delete=models.CASCADE, null=True, default=None) 
 
 class Schedule(models.Model):
@@ -93,3 +96,9 @@ class Equipment(models.Model):
     eq_qty = models.IntegerField(default=0)
     eq_price = models.IntegerField(default=0)
     department = models.ForeignKey(Department, on_delete=models.CASCADE, null=True, default=None)
+    
+class MedicalRecord(models.Model):
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
+    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, null=True, default=None)
+    date = models.DateField(default=timezone.now)
+    details = models.CharField(max_length=511)

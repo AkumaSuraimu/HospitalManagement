@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        nav {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+        }
+        nav a {
+            color: white;
+            text-decoration: none;
+            padding: 14px 20px;
+        }
+        nav a:hover {
+            background-color: #45a049;
+        }
+        .content {
+            padding: 15px;
+        }
+        h1, h2 {
+            margin-top: 20px;
+        }
+        .form-container {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 600px;
+            margin: 20px auto;
+        }
+        .form-container label {
+            display: block;
+            margin-top: 10px;
+        }
+        .form-container input, 
+        .form-container select, 
+        .form-container button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        .form-container button {
+            background-color: #4CAF50;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .form-container button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div>
+            <a href="{% url 'staff_LP' %}">Home</a>
+            <a href="{% url 'staff_addroom' %}">Add Room</a>
+            <a href="{% url 'staff_addbilling' %}">Add Billing</a>
+            <a href="{% url 'staff_viewrooms' %}">View Rooms</a>
+            <a href="{% url 'staff_viewBR' %}">View Billing Records</a>
+            <a href="#">Doctor Dashboard</a>
+            <a href="#">Patient Dashboard</a>
+        </div>
+        <a href="{% url 'logout' %}">Logout</a>
+    </nav>
+
+    <div class="content">
+        <h1>Add Billing Record</h1>
+        <h2>Staff Type: {{ staff.staff_type }}</h2>
+        <h3>Logged-in User: {{ user }}</h3>
+
+        <div class="form-container">
+            <form method="POST" action="{% url 'staff_addbilling' %}">
+                {% csrf_token %}
+                <label for="bill_date">Bill Date</label>
+                <input type="date" id="bill_date" name="bill_date" required>
+
+                <label for="bill_amount">Bill Amount</label>
+                <input type="number" id="bill_amount" name="bill_amount" required>
+
+                <label for="patient">Patient</label>
+                <select id="patient" name="patient" required>
+                    {% for patient in patients %}
+                        <option value="{{ patient.id }}">{{ patient.F_name }} {{ patient.L_name }}</option>
+                    {% endfor %}
+                </select>
+
+                <label for="department">Department</label>
+                <select id="department" name="department" required>
+                    {% for department in departments %}
+                        <option value="{{ department.id }}">{{ department.name }}</option>
+                    {% endfor %}
+                </select>
+
+                <button type="submit">Add Billing Record</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

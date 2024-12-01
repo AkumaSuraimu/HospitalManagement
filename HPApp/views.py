@@ -7,7 +7,7 @@ from django.http import HttpResponse,Http404
 from . import models
 from django.http import JsonResponse
 from django.core.paginator import Paginator
-import json
+from datetime import datetime, timedelta
 
 # Create your views here.
 @login_required
@@ -60,72 +60,6 @@ def get_user_details(request, user_id):
         return JsonResponse({"success": True, "role_data": role_data, "role": user.role})
     except Exception as e:
         return JsonResponse({"success": False, "error": str(e)})
-@login_required
-def add_admin_page(request):
-    context = {}
-    if request.method == 'POST':
-        name = request.POST.get('name')
-        email = request.POST.get('email')
-        password = request.POST.get('password')
-
-        # Check if the email already exists
-        if models.User.objects.filter(email=email).exists():
-            context['error'] = "Email already exists."
-        else:
-            models.User.objects.create(email=email, password=password, role='user', is_staff=True, is_superuser=True)
-            context['success'] = "Admin added successfully."
-
-    return render(request, 'admin_addAdmin.html', context)
-
-@login_required
-def add_equipment_page(request):
-    context = {}
-
-    if request.method == 'POST':
-        eq_name = request.POST.get('eq_name')
-        eq_type = request.POST.get('eq_type')
-        eq_qty = request.POST.get('eq_qty')
-        eq_price = request.POST.get('eq_price')
-        department_id = request.POST.get('department')
-
-        # Validate the form data
-        if not eq_name or not eq_qty or not eq_price:
-            context['error'] = "All fields are required."
-        else:
-            try:
-                department = models.Department.objects.get(id=department_id)
-                models.Equipment.objects.create(
-                    eq_name=eq_name,
-                    eq_type=eq_type,
-                    eq_qty=int(eq_qty),
-                    eq_price=int(eq_price),
-                    department=department,
-                )
-                context['success'] = "Equipment added successfully."
-            except models.Department.DoesNotExist:
-                context['error'] = "Selected department does not exist."
-
-    # Pass all departments to the template for the department dropdown
-    context['departments'] = models.Department.objects.all()
-    return render(request, 'admin_addEquipment.html', context)
-
-@login_required
-def add_department_page(request):
-    context = {}
-
-    if request.method == 'POST':
-        dep_name = request.POST.get('dep_name')
-
-        if not dep_name:
-            context['error'] = "Department name is required."
-        else:
-            try:
-                models.Department.objects.create(dep_name=dep_name)
-                context['success'] = "Department added successfully."
-            except Exception as e:
-                context['error'] = f"An error occurred: {str(e)}"
-    
-    return render(request, 'admin_addDepartment.html', context)
 
 def patient_register(request):
     return render(request, 'patient_register.html')
@@ -156,30 +90,6 @@ def delete_user(request, user_id):
         return JsonResponse({'success': False, 'message': 'Error deleting user'}, status=500)
 
 @login_required
-def delete_equipment(request, equipment_id):
-    if request.method == 'POST':
-        equipment = get_object_or_404(Equipment, id=equipment_id)
-        try:
-            equipment.delete()
-            return JsonResponse({'success': True, 'message': 'Equipment deleted successfully'})
-        except Exception as e:
-            return JsonResponse({'success': False, 'message': f'Error deleting equipment: {str(e)}'}, status=500)
-    else:
-        return JsonResponse({'success': False, 'message': 'Invalid request method'}, status=400)
-    
-@login_required
-def delete_department(request, department_id):
-    if request.method == 'POST':
-        department = get_object_or_404(Department, id=department_id)
-        try:
-            department.delete()
-            return JsonResponse({'success': True, 'message': 'Department deleted successfully'})
-        except Exception as e:
-            return JsonResponse({'success': False, 'message': f'Error deleting department: {str(e)}'}, status=500)
-    else:
-        return JsonResponse({'success': False, 'message': 'Invalid request method'}, status=400)
-
-@login_required
 def doctor_LP(request):
     try:
         
@@ -194,11 +104,11 @@ def doctor_LP(request):
             'schedule': schedule,
             'patients': patients,
         }
-        return render(request, 'doctor_LP.html', context)
+        return render(request, 'doctor/doctor_LP.html', context)
 
     except models.Doctor.DoesNotExist:
         
-        return render(request, 'doctor_LP.html', {'error': 'No doctor profile associated with this user.'})
+        return render(request, 'doctor/doctor_LP.html', {'error': 'No doctor profile associated with this user.'})
 
 @login_required
 def staff_LP(request):
@@ -213,10 +123,10 @@ def staff_LP(request):
             'staff': staff,
             'billing_records': billing_records,
         }
-        return render(request, 'staff_LP.html', context)
+        return render(request, 'staff/staff_LP.html', context)
 
     except models.Staff.DoesNotExist:
-        return render(request, 'staff_LP.html', {'error': 'No staff profile associated with this user.'})
+        return render(request, 'staff/staff_LP.html', {'error': 'No staff profile associated with this user.'})
 
 @login_required
 def patient_LP(request):
@@ -225,19 +135,39 @@ def patient_LP(request):
         patient = models.Patient.objects.get(user=request.user)
         
         
-        billing = models.Billing.objects.filter(patient=patient)
+        billing_records = models.Billing.objects.filter(patient=patient)
         schedule = models.Schedule.objects.filter(patient=patient)
+        medical_records = models.MedicalRecord.objects.filter(patient=patient)
         
         context = {
             'patient': patient,
-            'billing': billing,
+            'billing_records': billing_records,
             'schedule': schedule,
+            'medical_records': medical_records,
         }
-        return render(request, 'patient_LP.html', context)
+        return render(request, 'patient/patient_LP.html', context)
 
     except models.Patient.DoesNotExist:
         
-        return render(request, 'patient_LP.html', {'error': 'No patient profile associated with this user.'})
+        return render(request, 'patient/patient_LP.html', {'error': 'No patient profile associated with this user.'})
+
+
+@login_required
+def admin_LP(request):
+    
+    users = models.User.objects.all()
+
+    
+    paginator = Paginator(users, 5)
+    page_number = request.GET.get('page')  
+    page_obj = paginator.get_page(page_number)  
+
+    
+    return render(request, 'admin/admin_LP.html', {
+        'page_obj': page_obj,  
+        'logged_in_user': request.user,
+    })
+
 
 
 @login_required
@@ -320,7 +250,8 @@ def register_staff(request):
             )
             return redirect('staff_LP')  
 
-    return render(request, 'staff_register.html')
+    return render(request, 'staff/staff_register.html')
+
 @login_required
 def register_doctor(request):
 
@@ -346,7 +277,7 @@ def register_doctor(request):
 
     departments = models.Department.objects.all()
 
-    return render(request, 'doctor_register.html', {'departments': departments})
+    return render(request, 'doctor/doctor_register.html', {'departments': departments})
 
 @login_required
 def register_patient(request):
@@ -375,47 +306,36 @@ def register_patient(request):
             )
             return redirect('patient_LP')  
 
-    return render(request, 'patient_register.html')
+    return render(request, 'patient/patient_register.html')
+
 def login_view(request):
     if request.user.is_anonymous:
         if request.method == 'POST':
             email = request.POST.get('email')
             password = request.POST.get('password')
 
-            user = authenticate(request, email=email, password=password)
+        user = authenticate(request, email=email, password=password)
 
-            if user is not None:
-                login(request, user)
-                role = user.role  
+        if user is not None:
+            login(request, user)
+            role = user.role  
 
-                if role == 'patient':
-                    return redirect('patient_LP')
-                elif role == 'doctor':
-                    return redirect('doctor_LP')
-                elif role == 'staff':
-                    return redirect('staff_LP')
-                elif role == 'user':
-                    return redirect('admin_LP')
-                else:
-                    error = "Invalid role."
+            if role == 'patient':
+                return redirect('patient_LP')
+            elif role == 'doctor':
+                return redirect('doctor_LP')
+            elif role == 'staff':
+                return redirect('staff_LP')
+            elif role == 'user':
+                return redirect('admin_LP')
             else:
-                error = "Invalid email or password."
+                error = "Invalid role."
+        else:
+            error = "Invalid email or password."
 
             return render(request, 'login.html', {'error': error})
 
-        return render(request, 'login.html')
-    else:
-        role = request.user.role  
-
-        if role == 'patient':
-            return redirect('patient_LP')
-        elif role == 'doctor':
-            return redirect('doctor_LP')
-        elif role == 'staff':
-            return redirect('staff_LP')
-        elif role == 'user':
-            return redirect('admin_LP')
-
+    return render(request, 'login.html')
 
 @login_required
 def edit_patient(request):
@@ -443,7 +363,7 @@ def edit_patient(request):
             return redirect('patient_LP')
 
         return render(request,'edit_patient.html',{'user':user})
-    except models.Patient.DoesNotExist:
+    except Http404:
         return redirect('patient_register')
 
 @login_required
@@ -462,7 +382,7 @@ def edit_doctor(request):
             return redirect('doctor_LP')  
 
         return render(request, 'edit_doctor.html', {'doctor': doctor, 'departments': departments})
-    except models.Doctor.DoesNotExist:
+    except Http404:
         return redirect('doctor_register')
 
 @login_required
@@ -478,5 +398,516 @@ def edit_staff(request):
             return redirect('staff_LP')  
 
         return render(request, 'edit_staff.html', {'staff': staff})
-    except models.Staff.DoesNotExist:
+    except Http404:
         return redirect('staff_register')
+    
+@login_required
+def admin_billing_management(request):
+    success_message = ""
+    selected_billing = None
+    today_date = datetime.now().strftime('%Y-%m-%d')
+    
+    billing_records = models.Billing.objects.all()
+    
+    if request.method == 'GET' and 'edit_billing' in request.GET:
+        bill_id = request.GET.get('edit_billing')
+        try:
+            selected_billing = models.Billing.objects.get(id=bill_id)
+        except models.Billing.DoesNotExist:
+            success_message = "Selected billing record does not exist."
+    
+    if request.method == 'POST' and 'add_billing' in request.POST:
+        bill_date = request.POST.get('bill_date')
+        bill_amount = request.POST.get('bill_amount')
+        patient_id = request.POST.get('patient_id')
+        department_id = request.POST.get('department_id')
+        
+        if bill_date and bill_amount and patient_id and department_id:
+            patient = models.Patient.objects.get(id = patient_id)
+            department = models.Department.objects.get(id = department_id)
+            
+            billing = models.Billing.objects.create(
+                bill_date = bill_date,
+                bill_amount = bill_amount,
+                patient = patient,
+                department = department
+            )
+            success_message = "Billing record added successfully!"
+            
+    if request.method == 'POST' and 'update_billing' in request.POST:
+        bill_id = request.POST.get('bill_id')
+        bill_date = request.POST.get('bill_date')
+        bill_amount = request.POST.get('bill_amount')
+        patient_id = request.POST.get('patient_id')
+        department_id = request.POST.get('department_id')
+        
+        if bill_id and bill_date and bill_amount and patient_id and department_id:
+            billing = models.Billing.objects.get(id = bill_id)
+            
+            billing.bill_date = bill_date
+            billing.bill_amount = bill_amount
+            billing.patient = models.Patient.objects.get(id = patient_id)
+            billing.department = models.Department.objects.get(id = department_id)
+            billing.save()
+            
+            success_message = "Billing record updated successfully!"
+        
+    if request.method == 'POST' and 'delete_billing' in request.POST:
+        bill_id = request.POST.get('bill_id')
+        
+        if bill_id:
+            try:
+                billing = models.Billing.objects.get(id = bill_id)
+                billing.delete()
+                success_message = "Billing record deleted successfully!"
+            except models.Billing.DoesNotExist:
+                success_message = "Billing record does not exist"
+        
+    patients = models.Patient.objects.all()
+    departments = models.Department.objects.all()
+        
+    return render(request, 'admin/admin_billing_management.html', {
+        'billing_records': billing_records,
+        'patients': patients,
+        'departments': departments,
+        'success_message': success_message,
+        'selected_billing': selected_billing,
+        'today_date': today_date
+        }
+    )
+
+@login_required
+def admin_room_management(request):
+    success_message = ""
+    selected_room = None
+    
+    rooms = models.Room.objects.all()
+    departments = models.Department.objects.all()
+    
+    if request.method == 'GET' and 'edit_room' in request.GET:
+        room_id = request.GET.get('edit_room')
+        try:
+            selected_room = models.Room.objects.get(id=room_id)
+        except models.Room.DoesNotExist:
+            success_message = "Selected room does not exist."
+    
+    if request.method == 'POST' and 'add_room' in request.POST:
+        room_type = request.POST.get('room_type')
+        room_price = request.POST.get('room_price')
+        department_id = request.POST.get('department_id')
+        
+        if room_type and room_price and department_id:
+            department = models.Department.objects.get(id = department_id)
+            models.Room.objects.create(
+                room_type = room_type,
+                room_price = room_price,
+                department = department
+            )
+            success_message = "Room added successfully!"
+            
+    if request.method == 'POST' and 'update_room' in request.POST:
+        room_id = request.POST.get('room_id')
+        room_type = request.POST.get('room_type')
+        room_price = request.POST.get('room_price')
+        department_id = request.POST.get('department_id')
+        
+        if room_id and room_type and room_price and department_id:
+            department = models.Department.objects.get(id = department_id)
+            room = models.Room.objects.get(id = room_id)
+            
+            room.room_type = room_type
+            room.room_price = room_price
+            room.department = department
+            room.save()
+            
+            success_message = "Room updated successfully!"
+            
+    if request.method == 'POST' and 'delete_room' in request.POST:
+        room_id = request.POST.get('room_id')
+        
+        if room_id:
+            try:
+                room = models.Room.objects.get(id = room_id)
+                room.delete()
+                success_message = "Room deleted successfully!"
+            except models.Room.DoesNotExist:
+                success_message - "Room not found!"
+    
+    return render(request, 'admin/admin_room_management.html', {
+        'rooms': rooms,
+        'departments': departments,
+        'success_message': success_message,
+        'selected_room': selected_room
+    })
+    
+@login_required
+def admin_equipment_management(request):
+    success_message = ""
+    selected_equipment = None
+    
+    equipment = models.Equipment.objects.all()
+    departments = models.Department.objects.all()
+    
+    if request.method == 'GET' and 'edit_equipment' in request.GET:
+        equipment_id = request.GET.get('edit_equipment')
+        
+        if equipment_id:
+            try:
+                selected_equipment = models.Equipment.objects.get(id = equipment_id)
+            except models.Equipment.DoesNotExist:
+                success_message = "Equipment not found."
+                
+    if request.method == 'POST' and 'add_equipment' in request.POST:
+        eq_name = request.POST.get('eq_name')
+        eq_type = request.POST.get('eq_type')
+        eq_qty = request.POST.get('eq_qty')
+        eq_price = request.POST.get('eq_price')
+        department_id = request.POST.get('department_id')
+        
+        if eq_name and eq_type and eq_qty and eq_price and department_id:
+            department = models.Department.objects.get(id = department_id)
+            
+            models.Equipment.objects.create(
+                eq_name = eq_name,
+                eq_type = eq_type,
+                eq_qty = eq_qty,
+                eq_price = eq_price,
+                department = department
+            )
+            success_message = "Equipment created successfully!"
+    
+    if request.method == 'POST' and 'update_equipment' in request.POST:
+        equipment_id = request.POST.get('equipment_id')
+        eq_name = request.POST.get('eq_name')
+        eq_type = request.POST.get('eq_type')
+        eq_qty = request.POST.get('eq_qty')
+        eq_price = request.POST.get('eq_price')
+        department_id = request.POST.get('department_id')
+        
+        if equipment_id and eq_name and eq_type and eq_qty and eq_price and department_id:
+            try:
+                equipment_instance = models.Equipment.objects.get(id = equipment_id)
+                department = models.Department.objects.get(id = department_id)
+                
+                equipment_instance.eq_name = eq_name
+                equipment_instance.eq_type = eq_type
+                equipment_instance.eq_qty = eq_qty
+                equipment_instance.eq_price = eq_price
+                equipment_instance.department = department
+                
+                equipment_instance.save()
+                
+                success_message = "Equipment updated successfully!"
+            except models.Equipment.DoesNotExist:
+                success_message = "Equipment not found/does not exist."
+            except models.Department.DoesNotExist:
+                success_message = "Department does not exist?"
+                
+    if request.method == 'POST' and 'delete_equipment' in request.POST:
+        equipment_id = request.POST.get('equipment_id')
+        
+        if equipment_id:
+            try:
+                equipment_instance = models.Equipment.objects.get(id = equipment_id)
+                equipment_instance.delete()
+                success_message = "Equipment deleted successfully!"
+            except models.Equipment.DoesNotExist:
+                success_message = "Equipment not found!"
+                
+    return render(request, 'admin/admin_equipment_management.html', {
+        'equipment': equipment,
+        'success_message': success_message,
+        'selected_equipment': selected_equipment,
+        'departments': departments,
+    })
+
+@login_required
+def patient_book_appointment(request):
+    try:
+        patient = models.Patient.objects.get(user = request.user)
+    except models.Patient.DoesNotExist:
+        return redirect('patient_LP')
+    
+    appointments = models.Schedule.objects.filter(patient=patient).order_by('date', 'time')
+    
+    success_message = ""
+    
+    if request.method == 'POST':
+        date = request.POST.get('date')
+        time = request.POST.get('time')
+        doctor_id = request.POST.get('doctor')
+        
+        if date and time and doctor_id:
+            doctor = models.Doctor.objects.get(id = doctor_id)
+            
+            models.Schedule.objects.create(
+                date = date,
+                time = time,
+                doctor = doctor,
+                patient = patient
+            )
+            success_message = "Appointment booked successfully!"
+        
+    doctors = models.Doctor.objects.all()
+    
+    return render(request, 'patient/patient_book_appointment.html', {
+        'patient': patient,
+        'appointments': appointments,
+        'doctors': doctors,
+        'success_message': success_message,
+    })
+    
+@login_required
+def patient_med_record(request):
+    try:
+        patient = models.Patient.objects.get(user = request.user)
+    except models.Patient.DoesNotExist:
+        return redirect('patient_LP')
+    
+    medical_records = models.MedicalRecord.objects.filter(patient = patient).order_by('-date')
+    
+    return render(request, 'patient/patient_med_record.html', {
+        'patient': patient,
+        'medical_records': medical_records,
+    })
+
+@login_required
+def patient_view_billing(request):
+    try:
+        patient = models.Patient.objects.get(user = request.user)
+    except models.Patient.DoesNotExist:
+        return redirect('patient_LP')
+    
+    billing_records = models.Billing.objects.filter(patient = patient).order_by('bill_date')
+    
+    return render(request, 'patient/patient_view_billing.html', {
+        'patient': patient,
+        'billing_records': billing_records,
+    })
+    
+@login_required
+def doctor_check_appointments(request):
+    try:
+        doctor = models.Doctor.objects.get(user = request.user)
+    except models.Doctor.DoesNotExist:
+        return redirect('doctor_LP')
+    
+    patients = models.Patient.objects.filter(schedule__doctor = doctor).distinct()
+    appointments = models.Schedule.objects.filter(doctor = doctor).order_by('date', 'time')
+    
+    success_message = ""
+    selected_appointment = None
+    now = datetime.now()
+    today_date = now.strftime('%Y-%m-%d')
+    min_time = now.strftime('%H:%M') if now.hour >= 10 else "10:00"
+    
+    if request.method == 'GET' and 'edit_appointment' in request.GET:
+        appointment_id = request.GET.get('edit_appointment')
+        try:
+            selected_appointment = models.Schedule.objects.get(id = appointment_id)
+        except models.Schedule.DoesNotExist:
+            success_message = "Selected appointment does not exist."
+    
+    if request.method == 'POST' and 'add_appointment' in request.POST:
+        date = request.POST.get('date')
+        time = request.POST.get('time')
+        patient_id = request.POST.get('patient_id')
+        
+        if date and time and patient_id:
+            patient = models.Patient.objects.get(id = patient_id)
+            
+            models.Schedule.objects.create(
+                date = date,
+                time = time,
+                doctor = doctor,
+                patient = patient
+            )
+            
+            success_message = "Appointment added successfully!"
+    
+    if request.method == 'POST' and 'update_appointment' in request.POST:
+        appointment_id = request.POST.get('appointment_id')
+        date = request.POST.get('date')
+        time = request.POST.get('time')
+        patient_id = request.POST.get('patient_id')
+        
+        if appointment_id and date and time and patient_id:
+            appointment = models.Schedule.objects.get(id = appointment_id)
+            patient = models.Patient.objects.get(id = patient_id)
+            
+            appointment.date = date
+            appointment.time = time
+            appointment.patient = patient
+            appointment.doctor = doctor
+            appointment.save()
+            
+            success_message = "Appointment updated successfully!"
+    
+    if request.method == 'POST' and 'delete_appointment' in request.POST:
+        appointment_id = request.POST.get('appointment_id')
+        
+        if appointment_id:
+            try:
+                appointment = models.Schedule.objects.get(id = appointment_id)
+                appointment.delete()
+                success_message = "Appointment deleted successfully!"
+            except models.Schedule.DoesNotExist:
+                success_message = "Appointment not found!"
+    
+    return render(request, 'doctor/doctor_check_appointments.html', {
+        'doctor': doctor,
+        'patients': patients,
+        'appointments': appointments,
+        'success_message': success_message,
+        'selected_appointment': selected_appointment,
+        'today_date': today_date,
+        'min_time': min_time,
+    })
+    
+@login_required
+def doctor_view_patients(request):
+    try:
+        doctor = models.Doctor.objects.get(user = request.user)
+    except models.Doctor.DoesNotExist:
+        return redirect('doctor_LP')
+    
+    patients = models.Patient.objects.all()
+    
+    return render(request, 'doctor/doctor_view_patients.html', {
+        'doctor': doctor,
+        'patients': patients,
+    })
+    
+@login_required
+def doctor_view_billing(request):
+    try:
+        doctor = models.Doctor.objects.get(user = request.user)
+    except models.Doctor.DoesNotExist:
+        return redirect('doctor_LP')
+    
+    
+    billings = models.Billing.objects.all()
+    
+    return render(request, 'doctor/doctor_view_billing.html', {
+        'doctor': doctor,
+        'billings': billings,
+    })
+    
+@login_required
+def doctor_med_record_management(request):
+    try:
+        doctor = models.Doctor.objects.get(user = request.user)
+    except models.Doctor.DoesNotExist:
+        return redirect('doctor_LP')
+    
+    success_message = ""
+    selected_med_record = None
+    
+    patients = models.Patient.objects.all()
+    med_records = models.MedicalRecord.objects.filter(doctor = doctor).order_by('date')
+    
+    if request.method == 'GET' and 'edit_med_record' in request.GET:
+        med_record_id = request.GET.get('edit_med_record')
+        
+        try:
+            selected_med_record = models.MedicalRecord.objects.get(id = med_record_id)
+        except models.MedicalRecord.DoesNotExist:
+            success_message = "Medical Record does not exist!"
+    
+    if request.method == 'POST' and 'add_med_record' in request.POST:
+        patient_id = request.POST.get('patient_id')
+        date = request.POST.get('date')
+        details = request.POST.get('details')
+        
+        if patient_id and date and details:
+            patient = models.Patient.objects.get(id = patient_id)
+            
+            models.MedicalRecord.objects.create(
+                patient = patient,
+                doctor = doctor,
+                date = date,
+                details = details
+            )
+            success_message = "Medical Record added successfully!"
+    
+    if request.method == 'POST' and 'update_med_record' in request.POST:
+        med_record_id = request.POST.get('med_record_id')
+        patient_id = request.POST.get('patient_id')
+        date = request.POST.get('date')
+        details = request.POST.get('details')
+        
+        if med_record_id and patient_id and date and details:
+            try:
+                med_record = models.MedicalRecord.objects.get(id = med_record_id)
+                patient = models.Patient.objects.get(id = patient_id)
+                
+                med_record.patient = patient
+                med_record.date = date
+                med_record.details = details
+                
+                med_record.save()
+                
+                success_message = "Medical Record updated successfully!"
+            except models.MedicalRecord.DoesNotExist:
+                success_message = "Medical Record does not exist."
+            except models.Patient.DoesNotExist:
+                success_message = "Patient does not exist."
+    
+    if request.method == 'POST' and 'delete_med_record' in request.POST:
+        med_record_id = request.POST.get('med_record_id')
+        
+        if med_record_id:
+            try:
+                med_record = models.MedicalRecord.objects.get(id = med_record_id)
+                med_record.delete()
+                success_message = "Medical Record deleted successfully!"
+            except models.MedicalRecord.DoesNotExist:
+                success_message = "Medical Record not found!"
+    
+    return render(request, 'doctor/doctor_med_record_management.html', {
+        'doctor': doctor,
+        'patients': patients,
+        'med_records': med_records,
+        'success_message': success_message,
+        'selected_med_record': selected_med_record,
+    })
+    
+@login_required
+def staff_assign_room(request):
+    try:
+        staff = models.Staff.objects.get(user = request.user)
+    except models.Staff.DoesNotExist:
+        return redirect('staff_LP')
+    
+    success_message = ""
+    
+    rooms = models.Room.objects.all()
+    # patients = models.Patient.objects.all()
+    # doctors = models.Doctor.objects.all()
+    
+    if request.method == 'POST':
+        room_id = request.POST.get('room_id')
+        # patient_id = request.POST.get('patient_id')
+        # doctor_id = request.POST.get('doctor_id')
+        try:
+            room = models.Room.objects.get(id=room_id)
+                
+            # room.patient = models.Patient.objects.get(id=patient_id)
+            # room.doctor = models.Doctor.objects.get(id=doctor_id)
+                
+            room.save()
+                
+            success_message = "Room successfully assigned!"
+        except models.Room.DoesNotExist:
+            success_message = "Room does not exist?"
+        # except models.Patient.DoesNotExist:
+            # success_message = "Patient does not exist, too?"
+        # except models.Doctor.DoesNotExist:
+            # success_message = "Doctor also doesn't exist??? What's going on???"
+    
+    return render(request, 'staff/staff_assign_room.html', {
+        'rooms': rooms,
+        # 'patients': patients,
+        # 'doctors': doctors,
+        'success_message': success_message,
+    })
