@@ -3,24 +3,63 @@ from django.contrib.auth.hashers import check_password,make_password
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, authenticate, logout
-from django.http import HttpResponse
+from django.http import HttpResponse,Http404
 from . import models
+from django.http import JsonResponse
+from django.core.paginator import Paginator
+from datetime import datetime, timedelta
 
 # Create your views here.
-def user_list(request):
-    
-    users = models.User.objects.all()
-    
-    doctors = models.Doctor.objects.select_related('user', 'staff').all()
-    patients = models.Patient.objects.select_related('user').all()
-    staff = models.Staff.objects.select_related('user').all()
+@login_required
+def get_user_details(request, user_id):
+    try:
+        user = get_object_or_404(models.User, id=user_id)
+        role_data = {}
+        
+        if user.role == "patient":
+            try:
+                patient = models.Patient.objects.get(user=user)
+                role_data = {
+                    "First Name": patient.F_name,
+                    "Last Name": patient.L_name,
+                    "Age": patient.age,
+                    "Birthday": patient.bday,
+                    "Gender": patient.gender,
+                    "Address": patient.address,
+                    "Phone": patient.phone,
+                    "Bloodgroup": patient.bloodgroup,
+                    "Room": patient.room.room_type if patient.room else "None",
+                }
+            except models.Patient.DoesNotExist:
+                return JsonResponse({"success": False, "error": "Patient data not found for this user"})
+        elif user.role == "staff":
+            try:
+                staff = models.Staff.objects.get(user=user)
+                role_data = {
+                    "First Name": staff.F_name,
+                    "Last Name": staff.L_name,
+                    "Staff Type": staff.staff_type,
+                }
+            except models.Staff.DoesNotExist:
+                return JsonResponse({"success": False, "error": "Staff data not found for this user"})
+        elif user.role == "doctor":
+            try:
+                doctor = models.Doctor.objects.get(user=user)
+                role_data = {
+                    "First Name": doctor.F_name,
+                    "Last Name": doctor.L_name,
+                    "Specialization": doctor.specialization,
+                    "Department": doctor.department.dep_name if doctor.department else "None",
+                }
+            except models.Doctor.DoesNotExist:
+                return JsonResponse({"success": False, "error": "Doctor data not found for this user"})
 
-    return render(request, 'user_list.html', {
-        'users': users,
-        'doctors': doctors,
-        'patients': patients,
-        'staff': staff,
-    })
+        
+        print(f"Role Data for user {user_id}: {role_data}")
+        
+        return JsonResponse({"success": True, "role_data": role_data, "role": user.role})
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)})
 
 def patient_register(request):
     return render(request, 'patient_register.html')
@@ -33,15 +72,30 @@ def staff_register(request):
 
 def custom_logout_view(request):
     logout(request)
-    return redirect('login')  # Redirect to your preferred page
+    return redirect('login') 
+
+@login_required
+def delete_user(request):
+    user = request.user
+    user.delete()
+    
+    return redirect('login')
+
+@login_required
+def delete_user(request, user_id):
+    user = get_object_or_404(models.User, id=user_id)
+    if user.delete():
+        return JsonResponse({'success': True, 'message': 'User deleted successfully'})
+    else:
+        return JsonResponse({'success': False, 'message': 'Error deleting user'}, status=500)
 
 @login_required
 def doctor_LP(request):
     try:
-        # Get the doctor profile associated with the user
+        
         doctor = models.Doctor.objects.get(user=request.user)
         
-        # Fetch schedule and list of all patients
+        
         schedule = models.Schedule.objects.filter(doctor=doctor)
         patients = models.Patient.objects.all()
         
@@ -53,23 +107,21 @@ def doctor_LP(request):
         return render(request, 'doctor/doctor_LP.html', context)
 
     except models.Doctor.DoesNotExist:
-        # Return an error message if no doctor profile is found
+        
         return render(request, 'doctor/doctor_LP.html', {'error': 'No doctor profile associated with this user.'})
 
 @login_required
 def staff_LP(request):
     try:
-        # Get the staff profile associated with the user
+        
         staff = models.Staff.objects.get(user=request.user)
         
-        # Fetch billing records related to the staff
+       
         billing_records = models.Billing.objects.filter(staff=staff)
-        rooms = models.Room.objects.all()
 
         context = {
             'staff': staff,
             'billing_records': billing_records,
-            'rooms': rooms,
         }
         return render(request, 'staff/staff_LP.html', context)
 
@@ -79,25 +131,43 @@ def staff_LP(request):
 @login_required
 def patient_LP(request):
     try:
-        # Get the patient profile associated with the user
+        
         patient = models.Patient.objects.get(user=request.user)
         
-        # Fetch billing and schedule records related to the patient
-        billings = models.Billing.objects.filter(patient=patient)
-        appointments = models.Schedule.objects.filter(patient=patient)
+        
+        billing_records = models.Billing.objects.filter(patient=patient)
+        schedule = models.Schedule.objects.filter(patient=patient)
         medical_records = models.MedicalRecord.objects.filter(patient=patient)
         
         context = {
             'patient': patient,
-            'billings': billings,
-            'appointments': appointments,
+            'billing_records': billing_records,
+            'schedule': schedule,
             'medical_records': medical_records,
         }
         return render(request, 'patient/patient_LP.html', context)
 
     except models.Patient.DoesNotExist:
-        # Return an error message if no patient profile is found
+        
         return render(request, 'patient/patient_LP.html', {'error': 'No patient profile associated with this user.'})
+
+
+@login_required
+def admin_LP(request):
+    
+    users = models.User.objects.all()
+
+    
+    paginator = Paginator(users, 5)
+    page_number = request.GET.get('page')  
+    page_obj = paginator.get_page(page_number)  
+
+    
+    return render(request, 'admin/admin_LP.html', {
+        'page_obj': page_obj,  
+        'logged_in_user': request.user,
+    })
+
 
 
 def register_user(request):
@@ -107,22 +177,27 @@ def register_user(request):
         role = request.POST.get('role')
 
         if email and password and role:
-            # Create the user with the CustomUserManager
+            
+            if models.User.objects.filter(email=email).exists():
+                error = "An account with this email already exists."
+                return render(request, "register_user.html", {"error": error})
+            
+            
             user = models.User.objects.create_user(email=email, password=password, role=role)
 
             # Authenticate the user
             user = authenticate(email=email, password=password)
             if user is not None:
-                # Log in the user
+                
                 login(request, user)
 
-                # Redirect based on the user's role
+                
                 if role == 'patient':
-                    return redirect('patient/patient_register')
+                    return redirect('patient_register')
                 elif role == 'doctor':
                     return redirect('doctor_register')
                 elif role == 'staff':
-                    return redirect('staff/staff_register')
+                    return redirect('staff_register')
                 else:
                     return redirect('user_list')
 
@@ -136,14 +211,14 @@ def register_staff(request):
         L_name = request.POST.get('L_name')
 
         if staff_type and F_name and L_name:
-            # Create a new Staff instance and associate it with the current user
+            
             staff = models.Staff.objects.create(
                 staff_type=staff_type,
                 F_name=F_name,
                 L_name=L_name,
-                user=request.user  # Use the currently logged-in user
+                user=request.user  
             )
-            return redirect('staff_LP')  # Redirect to login after successful registration
+            return redirect('staff_LP')  
 
     return render(request, 'staff/staff_register.html')
 
@@ -154,26 +229,25 @@ def register_doctor(request):
         specialization = request.POST.get('specialization')
         F_name = request.POST.get('F_name')
         L_name = request.POST.get('L_name')
-        department_id = request.POST.get('department')  # Get the department from the form
+        department_id = request.POST.get('department')  
 
         if specialization and department_id:
-            # Fetch the department instance safely
+            
             department_instance = get_object_or_404(models.Department, id=department_id)
 
-            # Create a new Doctor instance
+            
             doctor = models.Doctor.objects.create(
                 F_name=F_name,
                 L_name=L_name,
                 specialization=specialization,
-                department=department_instance,  # Use the department instance
+                department=department_instance,  
                 user=request.user
             )
-            return redirect('doctor_LP')  # Redirect after successful registration
+            return redirect('doctor_LP') 
 
-    # Fetch all departments to display in the form
     departments = models.Department.objects.all()
 
-    return render(request, 'doctor_register.html', {'departments': departments})
+    return render(request, 'doctor/doctor_register.html', {'departments': departments})
 
 @login_required
 def register_patient(request):
@@ -189,7 +263,6 @@ def register_patient(request):
         bloodgroup = request.POST.get('bloodgroup')
 
         if F_name and L_name and age and bday and gender:
-            # Create a new Patient instance
             patient = models.Patient.objects.create(
                 F_name=F_name,
                 L_name=L_name,
@@ -201,30 +274,29 @@ def register_patient(request):
                 bloodgroup=bloodgroup,
                 user=request.user
             )
-            return redirect('patient_LP')  # Redirect after successful registration
+            return redirect('patient_LP')  
 
-    return render(request, 'patient_register.html')
+    return render(request, 'patient/patient_register.html')
 
 def login_view(request):
     if request.method == 'POST':
         email = request.POST.get('email')
         password = request.POST.get('password')
 
-        # Use authenticate to check email and password
         user = authenticate(request, email=email, password=password)
 
         if user is not None:
-            # Log the user in
             login(request, user)
-            role = user.role  # Get the user's role from your custom User model
+            role = user.role  
 
-            # Redirect based on the user's role
             if role == 'patient':
                 return redirect('patient_LP')
             elif role == 'doctor':
                 return redirect('doctor_LP')
             elif role == 'staff':
                 return redirect('staff_LP')
+            elif role == 'user':
+                return redirect('admin_LP')
             else:
                 error = "Invalid role."
         else:
@@ -235,14 +307,74 @@ def login_view(request):
     return render(request, 'login.html')
 
 @login_required
-def staff_billing_management(request):
+def edit_patient(request):
     try:
-        staff = models.Staff.objects.get(user = request.user)
-    except models.Staff.DoesNotExist:
-        return redirect('staff_LP')
+        user = models.Patient.objects.get(user=request.user)
+        if request.method == 'POST':
+            F_name = request.POST.get('F_name')
+            L_name = request.POST.get('L_name')
+            age = request.POST.get('age')
+            bday = request.POST.get('bday')
+            gender = request.POST.get('gender')
+            address = request.POST.get('address')
+            phone = request.POST.get('phone')
+            bloodgroup = request.POST.get('bloodgroup')
+
+            user.F_name = F_name
+            user.L_name = L_name
+            user.age = age
+            user.bday = bday
+            user.gender = gender
+            user.address = address
+            user.phone = phone
+            user.bloodgroup = bloodgroup
+            user.save()
+            return redirect('patient_LP')
+
+        return render(request,'edit_patient.html',{'user':user})
+    except Http404:
+        return redirect('patient_register')
+
+@login_required
+def edit_doctor(request):
+    try:
+        doctor = get_object_or_404(models.Doctor, user=request.user) 
+        departments = models.Department.objects.all() 
+        for department in departments:
+            print(department.dep_name)
+        if request.method == 'POST':
+            doctor.F_name = request.POST.get('F_name')
+            doctor.L_name = request.POST.get('L_name')
+            doctor.specialization = request.POST.get('specialization')
+            doctor.department_id = request.POST.get('department')  
+            doctor.save()
+            return redirect('doctor_LP')  
+
+        return render(request, 'edit_doctor.html', {'doctor': doctor, 'departments': departments})
+    except Http404:
+        return redirect('doctor_register')
+
+@login_required
+def edit_staff(request):
+    try:
+        staff = get_object_or_404(models.Staff, user=request.user) 
+
+        if request.method == 'POST':
+            staff.F_name = request.POST.get('F_name')
+            staff.L_name = request.POST.get('L_name')
+            staff.staff_type = request.POST.get('staff_type')
+            staff.save()
+            return redirect('staff_LP')  
+
+        return render(request, 'edit_staff.html', {'staff': staff})
+    except Http404:
+        return redirect('staff_register')
     
+@login_required
+def admin_billing_management(request):
     success_message = ""
     selected_billing = None
+    today_date = datetime.now().strftime('%Y-%m-%d')
     
     billing_records = models.Billing.objects.all()
     
@@ -267,7 +399,6 @@ def staff_billing_management(request):
                 bill_date = bill_date,
                 bill_amount = bill_amount,
                 patient = patient,
-                staff = staff,
                 department = department
             )
             success_message = "Billing record added successfully!"
@@ -304,22 +435,18 @@ def staff_billing_management(request):
     patients = models.Patient.objects.all()
     departments = models.Department.objects.all()
         
-    return render(request, 'staff/staff_billing_management.html', {
+    return render(request, 'admin/admin_billing_management.html', {
         'billing_records': billing_records,
         'patients': patients,
         'departments': departments,
         'success_message': success_message,
         'selected_billing': selected_billing,
+        'today_date': today_date
         }
     )
 
 @login_required
-def staff_room_management(request):
-    try:
-        staff = models.Staff.objects.get(user = request.user)
-    except models.Staff.DoesNotExist:
-        return redirect('staff_LP')
-    
+def admin_room_management(request):
     success_message = ""
     selected_room = None
     
@@ -375,11 +502,92 @@ def staff_room_management(request):
             except models.Room.DoesNotExist:
                 success_message - "Room not found!"
     
-    return render(request, 'staff/staff_room_management.html', {
+    return render(request, 'admin/admin_room_management.html', {
         'rooms': rooms,
         'departments': departments,
         'success_message': success_message,
         'selected_room': selected_room
+    })
+    
+@login_required
+def admin_equipment_management(request):
+    success_message = ""
+    selected_equipment = None
+    
+    equipment = models.Equipment.objects.all()
+    departments = models.Department.objects.all()
+    
+    if request.method == 'GET' and 'edit_equipment' in request.GET:
+        equipment_id = request.GET.get('edit_equipment')
+        
+        if equipment_id:
+            try:
+                selected_equipment = models.Equipment.objects.get(id = equipment_id)
+            except models.Equipment.DoesNotExist:
+                success_message = "Equipment not found."
+                
+    if request.method == 'POST' and 'add_equipment' in request.POST:
+        eq_name = request.POST.get('eq_name')
+        eq_type = request.POST.get('eq_type')
+        eq_qty = request.POST.get('eq_qty')
+        eq_price = request.POST.get('eq_price')
+        department_id = request.POST.get('department_id')
+        
+        if eq_name and eq_type and eq_qty and eq_price and department_id:
+            department = models.Department.objects.get(id = department_id)
+            
+            models.Equipment.objects.create(
+                eq_name = eq_name,
+                eq_type = eq_type,
+                eq_qty = eq_qty,
+                eq_price = eq_price,
+                department = department
+            )
+            success_message = "Equipment created successfully!"
+    
+    if request.method == 'POST' and 'update_equipment' in request.POST:
+        equipment_id = request.POST.get('equipment_id')
+        eq_name = request.POST.get('eq_name')
+        eq_type = request.POST.get('eq_type')
+        eq_qty = request.POST.get('eq_qty')
+        eq_price = request.POST.get('eq_price')
+        department_id = request.POST.get('department_id')
+        
+        if equipment_id and eq_name and eq_type and eq_qty and eq_price and department_id:
+            try:
+                equipment_instance = models.Equipment.objects.get(id = equipment_id)
+                department = models.Department.objects.get(id = department_id)
+                
+                equipment_instance.eq_name = eq_name
+                equipment_instance.eq_type = eq_type
+                equipment_instance.eq_qty = eq_qty
+                equipment_instance.eq_price = eq_price
+                equipment_instance.department = department
+                
+                equipment_instance.save()
+                
+                success_message = "Equipment updated successfully!"
+            except models.Equipment.DoesNotExist:
+                success_message = "Equipment not found/does not exist."
+            except models.Department.DoesNotExist:
+                success_message = "Department does not exist?"
+                
+    if request.method == 'POST' and 'delete_equipment' in request.POST:
+        equipment_id = request.POST.get('equipment_id')
+        
+        if equipment_id:
+            try:
+                equipment_instance = models.Equipment.objects.get(id = equipment_id)
+                equipment_instance.delete()
+                success_message = "Equipment deleted successfully!"
+            except models.Equipment.DoesNotExist:
+                success_message = "Equipment not found!"
+                
+    return render(request, 'admin/admin_equipment_management.html', {
+        'equipment': equipment,
+        'success_message': success_message,
+        'selected_equipment': selected_equipment,
+        'departments': departments,
     })
 
 @login_required
@@ -458,6 +666,9 @@ def doctor_check_appointments(request):
     
     success_message = ""
     selected_appointment = None
+    now = datetime.now()
+    today_date = now.strftime('%Y-%m-%d')
+    min_time = now.strftime('%H:%M') if now.hour >= 10 else "10:00"
     
     if request.method == 'GET' and 'edit_appointment' in request.GET:
         appointment_id = request.GET.get('edit_appointment')
@@ -518,6 +729,8 @@ def doctor_check_appointments(request):
         'appointments': appointments,
         'success_message': success_message,
         'selected_appointment': selected_appointment,
+        'today_date': today_date,
+        'min_time': min_time,
     })
     
 @login_required
@@ -626,4 +839,44 @@ def doctor_med_record_management(request):
         'med_records': med_records,
         'success_message': success_message,
         'selected_med_record': selected_med_record,
+    })
+    
+@login_required
+def staff_assign_room(request):
+    try:
+        staff = models.Staff.objects.get(user = request.user)
+    except models.Staff.DoesNotExist:
+        return redirect('staff_LP')
+    
+    success_message = ""
+    
+    rooms = models.Room.objects.all()
+    # patients = models.Patient.objects.all()
+    # doctors = models.Doctor.objects.all()
+    
+    if request.method == 'POST':
+        room_id = request.POST.get('room_id')
+        # patient_id = request.POST.get('patient_id')
+        # doctor_id = request.POST.get('doctor_id')
+        try:
+            room = models.Room.objects.get(id=room_id)
+                
+            # room.patient = models.Patient.objects.get(id=patient_id)
+            # room.doctor = models.Doctor.objects.get(id=doctor_id)
+                
+            room.save()
+                
+            success_message = "Room successfully assigned!"
+        except models.Room.DoesNotExist:
+            success_message = "Room does not exist?"
+        # except models.Patient.DoesNotExist:
+            # success_message = "Patient does not exist, too?"
+        # except models.Doctor.DoesNotExist:
+            # success_message = "Doctor also doesn't exist??? What's going on???"
+    
+    return render(request, 'staff/staff_assign_room.html', {
+        'rooms': rooms,
+        # 'patients': patients,
+        # 'doctors': doctors,
+        'success_message': success_message,
     })

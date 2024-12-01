@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Patient Dashboard</title>
+    <title>Staff Room Management</title>
     <style>
         body {
                 font-family: Arial, sans-serif;
@@ -141,30 +141,102 @@
                 text-align: left;
             }
     </style>
+    <script>
+        function toggleForm(formId) {
+            const form = document.getElementById(formId);
+            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+        }
+    </script>
 </head>
 <body>
     <div class="sidebar">
+        <div class="profile">
+            <h2 class="profile-name">--Admin--</h2>
+            <p class="profile-email">{{ user }}</p>
+        </div>
         <nav class="sidebar-nav">
-            <a href="{% url 'patient_LP' %}">Home</a>
-            <a href="{% url 'patient_book_appointment' %}">Book Appointment</a> 
-            <a href="{% url 'patient_med_record' %}">View Medical Records</a>
-            <a href="{% url 'patient_view_billing' %}">View Billing Information</a>
+            <a href="{% url 'admin_LP' %}">Home</a>
+            <a href="#">Add Admin</a>
+            <a href="{% url 'admin_equipment_management' %}">Equipment</a>
+            <a href="{% url 'admin_room_management' %}">Rooms</a>
+            <a href="{% url 'admin_billing_management' %}">Billings</a>
+            <a href="#">Departments</a>
             <a href="{% url 'logout' %}">Logout</a>
         </nav>
     </div>
     <div class="content">
-        <h1>Welcome, {{ patient.F_name }} {{ patient.L_name }}</h1>
-        <h2>Age: {{ patient.age }} - Gender: {{ patient.gender }}</h2>
-        <h3>Logged-in User: {{ user }}</h3>
+        <h1>Room Management</h1>
+        {% if success_message %}
+            <div class="message">{{ success_message }}</div>
+        {% endif %}
+        <h2>Rooms</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Room Type</th>
+                    <th>Room Price</th>
+                    <th>Assigned To</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for room in rooms %}
+                <tr>
+                    <td>{{ room.room_type }}</td>
+                    <td>{{ room.room_price }}</td>
+                    <td>{{ room.department.dep_name }}</td>
+                    <td>
+                        <form method="GET" action="{% url 'admin_room_management' %}" style="display:inline;">
+                            <input type="hidden" name="edit_room" value="{{ room.id }}">
+                            <button type="submit">Edit</button>
+                        </form>
+                        <form method="POST" action="{% url 'admin_room_management' %}" style="display:inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="delete_room" value="1">
+                            <input type="hidden" name="room_id" value="{{ room.id }}">
+                            <button type="submit" onclick="return confirm('Are you sure you want to delete this room?');">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="4">No rooms assigned to you.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <h2>{% if selected_room %}Update{% else %}Add{% endif %} Room</h2>
+        <div class="form-container">
+            <form method="POST" action="{% url 'admin_room_management' %}">
+                {% csrf_token %}
+                {% if selected_room %}
+                    <input type="hidden" name="update_room" value="1">
+                    <input type="hidden" name="room_id" value="{{ selected_room.id }}">
+                {% else %}
+                    <input type="hidden" name="add_room" value="1">
+                {% endif %}
 
-        <h2>Billing Records</h2>
-        <ul>
-            {% for record in billing_records %}
-                <li>Date: {{ record.bill_date }}, Amount: {{ record.bill_amount }}</li>
-            {% empty %}
-                <li>No billing records available.</li>
-            {% endfor %}
-        </ul>
+                <label for="room_type">Room Type</label>
+                <input type="text" id="room_type" name="room_type" value="{{ selected_room.room_type }}" required>
+
+                <label for="room_price">Room Price</label>
+                <input type="number" id="room_price" name="room_price" min="0" placeholder="i.e. 500" value="{{ selected_room.room_price }}" required>
+
+                <label for="department">Department</label>
+                <select id="department" name="department_id" required>
+                    {% for department in departments %}
+                        <option value="{{ department.id }}"
+                            {% if selected_room and selected_room.department.id == department.id %}
+                                selected
+                            {% endif %}>
+                                {{ department.id }} - {{ department.dep_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <button type="submit">{% if selected_room %}Update{% else %}Add{% endif %} Room</button>
+            </form>
+        </div>
     </div>
 </body>
 </html>

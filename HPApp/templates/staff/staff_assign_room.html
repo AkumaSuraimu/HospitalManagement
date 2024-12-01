@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Patient Dashboard</title>
+    <title>Staff Assign Room</title>
     <style>
         body {
                 font-family: Arial, sans-serif;
@@ -144,27 +144,73 @@
 </head>
 <body>
     <div class="sidebar">
+        <div class="profile">
+            <h2 class="profile-name">--Staff--</h2>
+            <p class="profile-email">{{ user }}</p>
+        </div>
         <nav class="sidebar-nav">
-            <a href="{% url 'patient_LP' %}">Home</a>
-            <a href="{% url 'patient_book_appointment' %}">Book Appointment</a> 
-            <a href="{% url 'patient_med_record' %}">View Medical Records</a>
-            <a href="{% url 'patient_view_billing' %}">View Billing Information</a>
+            <a href="{% url 'staff_LP' %}">Home</a>
+            <a href="{% url 'staff_assign_room' %}">Assign Room</a>
             <a href="{% url 'logout' %}">Logout</a>
         </nav>
     </div>
     <div class="content">
-        <h1>Welcome, {{ patient.F_name }} {{ patient.L_name }}</h1>
-        <h2>Age: {{ patient.age }} - Gender: {{ patient.gender }}</h2>
-        <h3>Logged-in User: {{ user }}</h3>
+        <h1>Assign Room</h1>
+        {% if success_message %}
+            <div class="message">{{ success_message }}</div>
+        {% endif %}
+        <div class="form-container">
+            <form method="POST" action="{% url 'staff_assign_room' %}">
+                {% csrf_token %}
+                <label for="room">Room</label>
+                <select id="room" name="room_id" required>
+                    {% for room in rooms %}
+                        <option value="{{ room.id }}">
+                            {{ room.room_type }} - {{ room.room_price }}
+                        </option>
+                    {% endfor %}
+                </select>
 
-        <h2>Billing Records</h2>
-        <ul>
-            {% for record in billing_records %}
-                <li>Date: {{ record.bill_date }}, Amount: {{ record.bill_amount }}</li>
-            {% empty %}
-                <li>No billing records available.</li>
-            {% endfor %}
-        </ul>
+                <!-- <label for="patient">Assign to Patient</label>
+                <select id="patient" name="patient_id" required>
+                    {% for patient in patients %}
+                        <option value="{{ patient.id }}">
+                            {{ patient.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <label for="doctor">Assign to Doctor</label>
+                <select id="doctor" name="doctor_id" required>
+                    {% for doctor in doctors %}
+                        <option value="{{ doctor.id }}">
+                            {{ doctor.name }}
+                        </option>
+                    {% endfor %}
+                </select> -->
+
+                <button type="submit">Assign Room</button>
+            </form>
+        </div>
     </div>
+    <h2>Available Rooms</h2>
+    <table border="1" style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+        <thead>
+            <tr>
+                <th>Room Type</th>
+                <th>Price</th>
+                <th>Department</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for room in rooms %}
+                <tr>
+                    <td>{{ room.room_type }}</td>
+                    <td>{{ room.room_price }}</td>
+                    <td>{{ room.department.dep_name }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </body>
 </html>
