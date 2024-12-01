@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Department</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            background-color: #f0f0f0;
+        }
+
+        .sidebar {
+            width: 250px;
+            background-color: #333;
+            color: #fff;
+            height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .profile {
+            text-align: left;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #555;
+        }
+
+        .profile-name {
+            color: #fff;
+        }
+
+        .profile-email {
+            color: #ccc;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .sidebar-nav a {
+            display: block;
+            color: #fff;
+            text-decoration: none;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .sidebar-nav a:hover {
+            background-color: #555;
+        }
+
+        .content {
+            flex-grow: 1;
+            padding: 40px;
+            background-color: #fff;
+            margin: 20px;
+            border-radius: 8px;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        form div {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #333;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #555;
+        }
+
+        /* Modal Styles */
+        #messageModal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        #messageModal div {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            width: 50%;
+            max-width: 500px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="profile">
+            <h2 class="profile-name">--Admin--</h2>
+            <p class="profile-email">{{ user }}</p>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="{% url 'admin_LP' %}">Dashboard</a>
+            <a href="{% url 'admin_addAdmin' %}">Add Admin</a>
+            <a href="{% url 'admin_addEquipment' %}">Add Equipment</a>
+            <a href="{% url 'logout' %}">Logout</a>
+        </nav>
+    </div>
+
+    <div class="content">
+        <h1>Add Department</h1>
+
+        <!-- Success or Error Modal -->
+        {% if success or error %}
+            <div id="messageModal">
+                <div>
+                    <h2>Message</h2>
+                    {% if success %}
+                        <p style="color: green;">{{ success }}</p>
+                    {% endif %}
+                    {% if error %}
+                        <p style="color: red;">{{ error }}</p>
+                    {% endif %}
+                    <button onclick="closeModal()">Close</button>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Add Department Form -->
+        <form method="POST" action="{% url 'admin_addDepartment' %}">
+            {% csrf_token %}
+            <div>
+                <label for="dep_name">Department Name:</label>
+                <input type="text" id="dep_name" name="dep_name" required>
+            </div>
+            <button type="submit">Add Department</button>
+        </form>
+    </div>
+
+    <script>
+        function closeModal() {
+            const modal = document.getElementById("messageModal");
+            modal.style.display = "none";
+        }
+
+        // Show modal if success or error is present
+        window.onload = function () {
+            const modal = document.getElementById("messageModal");
+            if (modal) {
+                modal.style.display = "flex";
+            }
+        };
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Billing Records</title>
+    <style>
+        body {
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 0;
+                display: flex;
+                background-color: #f0f0f0;
+            }
+            .sidebar {
+                width: 250px;
+                background-color: #333;
+                color: #fff;
+                height: 100vh;
+                padding: 20px;
+                box-sizing: border-box;
+            }
+            .profile {
+                text-align: left;
+                padding-bottom: 20px;
+                border-bottom: 1px solid #555;
+                cursor: pointer;
+            }
+            .profile-pic {
+                width: 60px;
+                height: 60px;
+                border-radius: 50%;
+                margin-bottom: 10px;
+                background-color: #555;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 24px;
+                color: #fff;
+                overflow: hidden;
+            }
+            .profile-pic img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+            .profile-pic img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+            .sidebar-nav {
+                margin-top: 20px;
+            }
+            .sidebar-nav a {
+                display: block;
+                color: #fff;
+                text-decoration: none;
+                padding: 10px;
+                margin: 5px 0;
+                border-radius: 5px;
+                transition: background-color 0.3s;
+            }
+            .sidebar-nav a:hover {
+                background-color: #555;
+            }
+            .content {
+                flex-grow: 1;
+                padding: 40px;
+                background-color: #fff;
+                box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                margin: 20px;
+                border-radius: 8px;
+            }
+            .form-container {
+                background-color: #f9f9f9;
+                padding: 20px;
+                border-radius: 8px;
+                max-width: 600px;
+                margin: 20px auto;
+            }
+            .form-container label {
+                display: block;
+                margin-top: 10px;
+                }
+            .form-container input,
+            .form-container select,
+            .form-container button {
+                width: 100%;
+                padding: 10px;
+                margin-top: 5px;
+                border-radius: 5px;
+                border: 1px solid #ccc;
+            }
+            .form-container button {
+                background-color: #4caf50;
+                color: white;
+                font-size: 16px;
+                cursor: pointer;
+            }
+            .form-container button:hover {
+                background-color: #45a049;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 20px;
+            }
+            table, th, td {
+                border: 1px solid #ddd;
+            }
+            th, td {
+                padding: 8px;
+                text-align: left;
+            }
+            th {
+                background-color: #4CAF50;
+                color: white;
+            }
+            .message {
+                color: green;
+                font-weight: bold;
+                text-align: center;
+            }
+            h1, h2, h3 {
+                color: #333;
+            }
+            ul {
+                list-style-type: none;
+                padding: 0;
+            }
+            li {
+                background-color: #f9f9f9;
+                margin-bottom: 10px;
+                padding: 15px;
+                border-radius: 5px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .profile-name{
+                color: #fff;
+                text-align: left;
+            }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <nav class="sidebar-nav">
+            <a href="{% url 'doctor_LP' %}">Home</a>
+            <a href="{% url 'doctor_check_appointments' %}">Check Appointment</a>
+            <a href="{% url 'doctor_view_patients' %}">Patients</a>
+            <a href="{% url 'doctor_med_record_management' %}">Medical Records</a>
+            <a href="{% url 'doctor_view_billing' %}">Billing Records</a>
+            <a href="#">Staff Dashboard</a>
+            <a href="#">Patient Dashboard</a>
+            <a href="{% url 'logout' %}">Logout</a>
+        </nav>
+    </div>
+    <div class="content">
+        <h1>Welcome, Dr. {{ doctor.F_name }} {{ doctor.L_name }}</h1>
+        <h2>Specialization: {{ doctor.specialization }}</h2>
+        <h3>Logged-in User: {{ user }}</h3>
+
+        <h2>Billing Records</h2>
+        <ul>
+            {% for record in billing_records %}
+                <li>Patient: {{ record.patient.F_name }} {{ record.patient.L_name }}, 
+                    Date: {{ record.bill_date }}, Amount: {{ record.bill_amount }}
+                </li>
+            {% empty %}
+                <li>No billing records available.</li>
+            {% endfor %}
+        </ul>
+    </div>
+</body>
+</html>

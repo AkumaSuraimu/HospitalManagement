@@ -193,6 +193,9 @@
             <a href="{% url 'admin_addAdmin' %}">Add Admin</a>
             <a href="{% url 'admin_addEquipment' %}">Add Equipment</a>
             <a href="{% url 'admin_addDepartment' %}">Add Department</a>
+            <a href="{% url 'admin_equipment_management' %}">Equipment</a>
+            <a href="{% url 'admin_room_management' %}">Rooms</a>
+            <a href="{% url 'admin_billing_management' %}">Billings</a>
             <a href="{% url 'logout' %}">Logout</a>
         </nav>
     </div>
@@ -312,10 +315,9 @@
                     <td style="padding: 10px; border: 1px solid #ddd;">{{ equipment.eq_price }}</td>
                     <td style="padding: 10px; border: 1px solid #ddd;">{{ equipment.department.dep_name }}</td>
                     <td style="padding: 10px; border: 1px solid #ddd;">
-                        <form method="POST" action="{% url 'delete_equipment' equipment.id %}" style="display: inline;">
-                            <button onclick="deleteEquipment('{{ equipment.id }}')" style="padding: 10px 20px; background-color: red; color: #fff; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s;">
-                                Delete
-                            </button>
+                        <button onclick="deleteEquipment('{{ equipment.id }}')" style="padding: 10px 20px; background-color: red; color: #fff; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s;">
+                            Delete Equipment
+                        </button>
                         </form>
                     </td>
                 </tr>
@@ -356,10 +358,10 @@
                     <td style="padding: 10px; border: 1px solid #ddd;">{{ department.dep_name }}</td>
                     <td style="padding: 10px; border: 1px solid #ddd;">
                         <form method="POST" action="{% url 'delete_department' department.id %}" style="display: inline;">
+                           {% csrf_token %}
                             <button onclick="deleteDepartment('{{ department.id }}')" style="padding: 10px 20px; background-color: red; color: #fff; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s;">
-                                Delete
+                                Delete Department
                             </button>
-                        </form>
                     </td>
                 </tr>
                 {% empty %}
@@ -389,11 +391,8 @@
 </body>
 </html>
 <script>
-    let userToDeleteId = null;
-    let itemToDeleteId = null;  // For equipment or department deletion
+    let userToDeleteId = null; 
     const csrfToken = "{{ csrf_token }}";
-
-    // Fetch user details
     function fetchUserDetails(userId) {
         fetch(`/get_user_details/${userId}/`, {
             method: 'GET',
@@ -417,6 +416,7 @@
                 modalContent.innerHTML = detailsHtml;
             }
             
+            // Display the modal with animation
             modal.style.display = "flex";
             setTimeout(() => {
                 modal.classList.add("show");
@@ -427,7 +427,6 @@
         });
     }
 
-    // Close user details modal
     function closeModal() {
         const modal = document.getElementById("userDetailsModal");
         modal.classList.remove("show");
@@ -435,22 +434,19 @@
             modal.style.display = "none";
         }, 300); // Wait for the transition to finish before hiding the modal
     }
-
-    // Delete user
     function deleteUser(userId) {
-        userToDeleteId = userId;
+        userToDeleteId = userId;  
         const modal = document.getElementById("deleteConfirmationModal");
-        modal.style.display = "flex";
+        modal.style.display = "flex";  
     }
 
-    // Close delete modal
     function closeDeleteModal() {
         const modal = document.getElementById("deleteConfirmationModal");
-        modal.style.display = "none";
+        modal.style.display = "none"; 
     }
 
-    // Confirm delete user
     function confirmDeleteUser() {
+        //console.log(csrfToken);
         if (userToDeleteId !== null) {
             fetch(`/delete_user/${userToDeleteId}/`, {
                 method: 'POST',
@@ -463,117 +459,126 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showMessageInModal(data.message, 'user');
+                    showMessageInModal(data.message);
                     setTimeout(() => {
                         location.reload(); // Reload the page after success
-                    }, 2000); // Allow time for message to show before reloading
+                    }, 2000); // Allow time for message to show before reloading 
                 } else {
-                    showMessageInModal(data.message, 'user');
+                    showMessageInModal(data.message);
                 }
-                closeDeleteModal();
+                closeDeleteModal(); 
             })
             .catch(error => {
-                showMessageInModal("Error deleting user: " + error.message, 'user');
-                closeDeleteModal();
+                showMessageInModal("Error deleting user: " + error.message);
+                closeDeleteModal();    
             });
         }
     }
-
-    // Show success or error message
-    function showMessageInModal(message, type) {
-        const modal = document.getElementById(`${type}DeleteMessageModal`);
+    function showMessageInModal(message) {
+        const modal = document.getElementById("deleteMessageModal");
         const modalContent = document.getElementById("modalMessageContent");
+        
         
         modalContent.innerHTML = `<p>${message}</p>`;
         
+       
         modal.style.display = "flex";
         setTimeout(() => {
             modal.classList.add("show");
-        }, 10);
+        }, 10); 
     }
 
-    // Close message modal
-    function closeMessageModal(type) {
-        const modal = document.getElementById(`${type}DeleteMessageModal`);
+    function closeMessageModal() {
+        const modal = document.getElementById("deleteMessageModal");
         modal.classList.remove("show");
         setTimeout(() => {
             modal.style.display = "none";
-        }, 300);
+        }, 300); 
     }
 
-    // --- Equipment & Department Handling ---
     
-    // Delete equipment
     function deleteEquipment(equipmentId) {
-        itemToDeleteId = equipmentId;
-        const modal = document.getElementById("equipmentDeleteConfirmationModal");
-        modal.style.display = "flex";
+        // Open the confirmation modal
+        const confirmationModal = document.getElementById('deleteConfirmationModal');
+        confirmationModal.style.display = 'flex';
+
+        // Set the delete action for the confirmation modal
+        const deleteConfirmBtn = document.getElementById('deleteConfirmBtn');
+        deleteConfirmBtn.onclick = function () {
+            // Make an AJAX request to delete the equipment
+            fetch(`/delete_equipment/${equipmentId}/`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Close the confirmation modal
+                closeDeleteModal();
+                // Show success message
+                openMessageModal('Equipment deleted successfully');
+                // Optionally, reload the page or update the equipment list
+                location.reload();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                closeDeleteModal();
+                openMessageModal('Failed to delete equipment');
+            });
+        };
     }
 
-    // Delete department
     function deleteDepartment(departmentId) {
-        itemToDeleteId = departmentId;
-        const modal = document.getElementById("departmentDeleteConfirmationModal");
-        modal.style.display = "flex";
+    event.preventDefault();
+    // Open the confirmation modal
+    const confirmationModal = document.getElementById('deleteConfirmationModal');
+    confirmationModal.style.display = 'flex';
+
+    // Set the delete action for the confirmation modal
+    const deleteConfirmBtn = document.getElementById('deleteConfirmBtn');
+    deleteConfirmBtn.onclick = function () {
+        console.log('Deleting department with ID:', departmentId);  // Debugging log
+        // Make an AJAX request to delete the department
+        fetch(`/delete_department/${departmentId}/`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken // Ensure this token is correctly embedded
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+                // Close the confirmation modal
+                closeDeleteModal();
+                // Show success message
+                openMessageModal('Department deleted successfully');
+                // Optionally, reload the page or update the equipment list
+                location.reload();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            closeDeleteModal();
+            openMessageModal('Failed to delete department');
+        });
+    };
+}
+
+    function openMessageModal(message) {
+        const messageModal = document.getElementById('deleteMessageModal');
+        document.getElementById('modalMessageContent').innerText = message;
+        messageModal.style.display = 'flex';
     }
 
-    // Confirm delete equipment
-    function confirmDeleteEquipment() {
-        if (itemToDeleteId !== null) {
-            fetch(`/delete_equipment/${itemToDeleteId}/`, {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showMessageInModal(data.message, 'equipment');
-                    setTimeout(() => {
-                        location.reload(); // Reload the page after success
-                    }, 2000); // Allow time for message to show before reloading
-                } else {
-                    showMessageInModal(data.message, 'equipment');
-                }
-                closeDeleteModal();
-            })
-            .catch(error => {
-                showMessageInModal("Error deleting equipment: " + error.message, 'equipment');
-                closeDeleteModal();
-            });
-        }
+    function closeMessageModal() {
+        const messageModal = document.getElementById('deleteMessageModal');
+        messageModal.style.display = 'none';
     }
 
-    // Confirm delete department
-    function confirmDeleteDepartment() {
-        if (itemToDeleteId !== null) {
-            fetch(`/delete_department/${itemToDeleteId}/`, {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showMessageInModal(data.message, 'department');
-                    setTimeout(() => {
-                        location.reload(); // Reload the page after success
-                    }, 2000); // Allow time for message to show before reloading
-                } else {
-                    showMessageInModal(data.message, 'department');
-                }
-                closeDeleteModal();
-            })
-            .catch(error => {
-                showMessageInModal("Error deleting department: " + error.message, 'department');
-                closeDeleteModal();
-            });
-        }
+    function closeDeleteModal() {
+        const confirmationModal = document.getElementById('deleteConfirmationModal');
+        confirmationModal.style.display = 'none';
     }
 </script>
+

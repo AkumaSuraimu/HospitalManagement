@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Patient Registration - Hospital System</title>
+    <title>Patient Dashboard</title>
     <style>
         body {
                 font-family: Arial, sans-serif;
@@ -143,39 +143,28 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Patient Registration</h1>
-        <form method="POST">
-            {% csrf_token %}
-            <label for="F_name">First Name:</label>
-            <input type="text" id="F_name" name="F_name" required>
+    <div class="sidebar">
+        <nav class="sidebar-nav">
+            <a href="{% url 'patient_LP' %}">Home</a>
+            <a href="{% url 'patient_book_appointment' %}">Book Appointment</a> 
+            <a href="{% url 'patient_med_record' %}">View Medical Records</a>
+            <a href="{% url 'patient_view_billing' %}">View Billing Information</a>
+            <a href="{% url 'logout' %}">Logout</a>
+        </nav>
+    </div>
+    <div class="content">
+        <h1>Welcome, {{ patient.F_name }} {{ patient.L_name }}</h1>
+        <h2>Age: {{ patient.age }} - Gender: {{ patient.gender }}</h2>
+        <h3>Logged-in User: {{ user }}</h3>
 
-            <label for="L_name">Last Name:</label>
-            <input type="text" id="L_name" name="L_name" required>
-
-            <label for="age">Age:</label>
-            <input type="number" id="age" name="age" required>
-
-            <label for="bday">Birthday:</label>
-            <input type="date" id="bday" name="bday" required>
-
-            <label for="gender">Gender:</label>
-            <select id="gender" name="gender" required>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-            </select>
-
-            <label for="address">Address:</label>
-            <input type="text" id="address" name="address">
-
-            <label for="phone">Phone:</label>
-            <input type="text" id="phone" name="phone">
-
-            <label for="bloodgroup">Blood Group:</label>
-            <input type="text" id="bloodgroup" name="bloodgroup">
-
-            <button type="submit">Register Patient</button>
-        </form>
+        <h2>Medical History</h2>
+        <ul>
+            {% for record in medical_records %}
+                <li>Date: {{ record.date }}, Details: {{ record.details }}</li>
+            {% empty %}
+                <li>No medical records found.</li>
+            {% endfor %}
+        </ul>
     </div>
 </body>
 </html>

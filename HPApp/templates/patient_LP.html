@@ -101,25 +101,15 @@
             <h3 class="profile-name">{{ patient.F_name }} {{ patient.L_name }}</h3>
         </div>
         <nav class="sidebar-nav">
-            <a href="#">Home</a>
-            <a href="#">Book Appointment</a>
-            <a href="#">View Medical Records</a>
-            <a href="#">View Billing Information</a>
-            <a href="#">Staff Dashboard</a>
-            <a href="#">Doctor Dashboard</a>
+            <div>
+                <a href="{% url 'patient_LP' %}">Home</a>
+                <a href="{% url 'patient_book_appointment' %}">Book Appointment</a>
+                <a href="{% url 'patient_med_record' %}">View Medical Records</a>
+                <a href="{% url 'patient_view_billing' %}">View Billing Information</a>
+            </div>
             <a href="{% url 'logout' %}">Logout</a>
         </nav>
     </div>
-    <nav>
-        <div>
-            <a href="{% url 'patient_LP' %}">Home</a>
-            <a href="{% url 'patient_bookappointment' %}">Book Appointment</a>
-            <a href="{% url 'patient_medrecord' %}">View Medical Records</a>
-            <a href="{% url 'patient_viewbilling' %}">View Billing Information</a>
-        </div>
-        <a href="{% url 'logout' %}">Logout</a>
-    </nav>
-
     <div class="content">
         <h1>Welcome, {{ patient.F_name}} {{ patient.L_name }}</h1>
         <h2>Age: {{ patient.age }} - Gender: {{ patient.gender }}</h2>

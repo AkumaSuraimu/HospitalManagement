@@ -60,6 +60,73 @@ def get_user_details(request, user_id):
         return JsonResponse({"success": True, "role_data": role_data, "role": user.role})
     except Exception as e:
         return JsonResponse({"success": False, "error": str(e)})
+    
+@login_required
+def add_admin_page(request):
+    context = {}
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+
+        # Check if the email already exists
+        if models.User.objects.filter(email=email).exists():
+            context['error'] = "Email already exists."
+        else:
+            models.User.objects.create(email=email, password=password, role='user', is_staff=True, is_superuser=True)
+            context['success'] = "Admin added successfully."
+
+    return render(request, 'admin_addAdmin.html', context)
+
+@login_required
+def add_equipment_page(request):
+    context = {}
+
+    if request.method == 'POST':
+        eq_name = request.POST.get('eq_name')
+        eq_type = request.POST.get('eq_type')
+        eq_qty = request.POST.get('eq_qty')
+        eq_price = request.POST.get('eq_price')
+        department_id = request.POST.get('department')
+
+        # Validate the form data
+        if not eq_name or not eq_qty or not eq_price:
+            context['error'] = "All fields are required."
+        else:
+            try:
+                department = models.Department.objects.get(id=department_id)
+                models.Equipment.objects.create(
+                    eq_name=eq_name,
+                    eq_type=eq_type,
+                    eq_qty=int(eq_qty),
+                    eq_price=int(eq_price),
+                    department=department,
+                )
+                context['success'] = "Equipment added successfully."
+            except models.Department.DoesNotExist:
+                context['error'] = "Selected department does not exist."
+
+    # Pass all departments to the template for the department dropdown
+    context['departments'] = models.Department.objects.all()
+    return render(request, 'admin_addEquipment.html', context)
+
+@login_required
+def add_department_page(request):
+    context = {}
+
+    if request.method == 'POST':
+        dep_name = request.POST.get('dep_name')
+
+        if not dep_name:
+            context['error'] = "Department name is required."
+        else:
+            try:
+                models.Department.objects.create(dep_name=dep_name)
+                context['success'] = "Department added successfully."
+            except Exception as e:
+                context['error'] = f"An error occurred: {str(e)}"
+    
+    return render(request, 'admin_addDepartment.html', context)
 
 def patient_register(request):
     return render(request, 'patient_register.html')
@@ -80,6 +147,22 @@ def delete_user(request):
     user.delete()
     
     return redirect('login')
+
+@login_required
+def delete_equipment(request, equipment_id):
+    equipment = get_object_or_404(models.Equipment, id=equipment_id)
+    if equipment.delete():
+        return JsonResponse({'success': True,'message': 'Equipment deleted successfully'})
+    else:
+        return JsonResponse({'success': False,'message': 'Error deleting equipment'}, status=500)
+
+@login_required
+def delete_department(request, department_id):
+    department = get_object_or_404(models.Department, id=department_id)
+    if department.delete():
+        return JsonResponse({'success': True,'message': 'Department deleted successfully'})
+    else:
+        return JsonResponse({'success': False,'message': 'Error deleting department'}, status=500)
 
 @login_required
 def delete_user(request, user_id):
@@ -104,11 +187,11 @@ def doctor_LP(request):
             'schedule': schedule,
             'patients': patients,
         }
-        return render(request, 'doctor/doctor_LP.html', context)
+        return render(request, 'doctor_LP.html', context)
 
     except models.Doctor.DoesNotExist:
         
-        return render(request, 'doctor/doctor_LP.html', {'error': 'No doctor profile associated with this user.'})
+        return render(request, 'doctor_LP.html', {'error': 'No doctor profile associated with this user.'})
 
 @login_required
 def staff_LP(request):
@@ -123,10 +206,10 @@ def staff_LP(request):
             'staff': staff,
             'billing_records': billing_records,
         }
-        return render(request, 'staff/staff_LP.html', context)
+        return render(request, 'staff_LP.html', context)
 
     except models.Staff.DoesNotExist:
-        return render(request, 'staff/staff_LP.html', {'error': 'No staff profile associated with this user.'})
+        return render(request, 'staff_LP.html', {'error': 'No staff profile associated with this user.'})
 
 @login_required
 def patient_LP(request):
@@ -145,11 +228,11 @@ def patient_LP(request):
             'schedule': schedule,
             'medical_records': medical_records,
         }
-        return render(request, 'patient/patient_LP.html', context)
+        return render(request, 'patient_LP.html', context)
 
     except models.Patient.DoesNotExist:
         
-        return render(request, 'patient/patient_LP.html', {'error': 'No patient profile associated with this user.'})
+        return render(request, 'patient_LP.html', {'error': 'No patient profile associated with this user.'})
 
 
 @login_required
@@ -163,7 +246,7 @@ def admin_LP(request):
     page_obj = paginator.get_page(page_number)  
 
     
-    return render(request, 'admin/admin_LP.html', {
+    return render(request, 'admin_LP.html', {
         'page_obj': page_obj,  
         'logged_in_user': request.user,
     })
@@ -178,7 +261,7 @@ def admin_LP(request):
 
     # Paginate users
     user_paginator = Paginator(users, 5)
-    user_page_number = request.GET.get('user_page')
+    user_page_number = request.GET.get('page')
     page_obj = user_paginator.get_page(user_page_number)
 
     # Paginate equipment
@@ -250,7 +333,7 @@ def register_staff(request):
             )
             return redirect('staff_LP')  
 
-    return render(request, 'staff/staff_register.html')
+    return render(request, 'staff_register.html')
 
 @login_required
 def register_doctor(request):
@@ -277,7 +360,7 @@ def register_doctor(request):
 
     departments = models.Department.objects.all()
 
-    return render(request, 'doctor/doctor_register.html', {'departments': departments})
+    return render(request, 'doctor_register.html', {'departments': departments})
 
 @login_required
 def register_patient(request):
@@ -306,7 +389,7 @@ def register_patient(request):
             )
             return redirect('patient_LP')  
 
-    return render(request, 'patient/patient_register.html')
+    return render(request, 'patient_register.html')
 
 def login_view(request):
     if request.user.is_anonymous:
@@ -314,28 +397,39 @@ def login_view(request):
             email = request.POST.get('email')
             password = request.POST.get('password')
 
-        user = authenticate(request, email=email, password=password)
+            user = authenticate(request, email=email, password=password)
 
-        if user is not None:
-            login(request, user)
-            role = user.role  
+            if user is not None:
+                login(request, user)
+                role = user.role  
 
-            if role == 'patient':
-                return redirect('patient_LP')
-            elif role == 'doctor':
-                return redirect('doctor_LP')
-            elif role == 'staff':
-                return redirect('staff_LP')
-            elif role == 'user':
-                return redirect('admin_LP')
+                if role == 'patient':
+                    return redirect('patient_LP')
+                elif role == 'doctor':
+                    return redirect('doctor_LP')
+                elif role == 'staff':
+                    return redirect('staff_LP')
+                elif role == 'user':
+                    return redirect('admin_LP')
+                else:
+                    error = "Invalid role."
             else:
-                error = "Invalid role."
-        else:
-            error = "Invalid email or password."
+                error = "Invalid email or password."
 
             return render(request, 'login.html', {'error': error})
 
-    return render(request, 'login.html')
+        return render(request, 'login.html')
+    else:
+        role = request.user.role  
+
+        if role == 'patient':
+            return redirect('patient_LP')
+        elif role == 'doctor':
+            return redirect('doctor_LP')
+        elif role == 'staff':
+            return redirect('staff_LP')
+        elif role == 'user':
+            return redirect('admin_LP')
 
 @login_required
 def edit_patient(request):
@@ -466,7 +560,7 @@ def admin_billing_management(request):
     patients = models.Patient.objects.all()
     departments = models.Department.objects.all()
         
-    return render(request, 'admin/admin_billing_management.html', {
+    return render(request, 'admin_billing_management.html', {
         'billing_records': billing_records,
         'patients': patients,
         'departments': departments,
@@ -533,7 +627,7 @@ def admin_room_management(request):
             except models.Room.DoesNotExist:
                 success_message - "Room not found!"
     
-    return render(request, 'admin/admin_room_management.html', {
+    return render(request, 'admin_room_management.html', {
         'rooms': rooms,
         'departments': departments,
         'success_message': success_message,
@@ -614,7 +708,7 @@ def admin_equipment_management(request):
             except models.Equipment.DoesNotExist:
                 success_message = "Equipment not found!"
                 
-    return render(request, 'admin/admin_equipment_management.html', {
+    return render(request, 'admin_equipment_management.html', {
         'equipment': equipment,
         'success_message': success_message,
         'selected_equipment': selected_equipment,
@@ -650,7 +744,7 @@ def patient_book_appointment(request):
         
     doctors = models.Doctor.objects.all()
     
-    return render(request, 'patient/patient_book_appointment.html', {
+    return render(request, 'patient_book_appointment.html', {
         'patient': patient,
         'appointments': appointments,
         'doctors': doctors,
@@ -666,7 +760,7 @@ def patient_med_record(request):
     
     medical_records = models.MedicalRecord.objects.filter(patient = patient).order_by('-date')
     
-    return render(request, 'patient/patient_med_record.html', {
+    return render(request, 'patient_med_record.html', {
         'patient': patient,
         'medical_records': medical_records,
     })
@@ -680,7 +774,7 @@ def patient_view_billing(request):
     
     billing_records = models.Billing.objects.filter(patient = patient).order_by('bill_date')
     
-    return render(request, 'patient/patient_view_billing.html', {
+    return render(request, 'patient_view_billing.html', {
         'patient': patient,
         'billing_records': billing_records,
     })
@@ -754,7 +848,7 @@ def doctor_check_appointments(request):
             except models.Schedule.DoesNotExist:
                 success_message = "Appointment not found!"
     
-    return render(request, 'doctor/doctor_check_appointments.html', {
+    return render(request, 'doctor_check_appointments.html', {
         'doctor': doctor,
         'patients': patients,
         'appointments': appointments,
@@ -773,7 +867,7 @@ def doctor_view_patients(request):
     
     patients = models.Patient.objects.all()
     
-    return render(request, 'doctor/doctor_view_patients.html', {
+    return render(request, 'doctor_view_patients.html', {
         'doctor': doctor,
         'patients': patients,
     })
@@ -788,7 +882,7 @@ def doctor_view_billing(request):
     
     billings = models.Billing.objects.all()
     
-    return render(request, 'doctor/doctor_view_billing.html', {
+    return render(request, 'doctor_view_billing.html', {
         'doctor': doctor,
         'billings': billings,
     })
@@ -864,7 +958,7 @@ def doctor_med_record_management(request):
             except models.MedicalRecord.DoesNotExist:
                 success_message = "Medical Record not found!"
     
-    return render(request, 'doctor/doctor_med_record_management.html', {
+    return render(request, 'doctor_med_record_management.html', {
         'doctor': doctor,
         'patients': patients,
         'med_records': med_records,
@@ -905,7 +999,7 @@ def staff_assign_room(request):
         # except models.Doctor.DoesNotExist:
             # success_message = "Doctor also doesn't exist??? What's going on???"
     
-    return render(request, 'staff/staff_assign_room.html', {
+    return render(request, 'staff_assign_room.html', {
         'rooms': rooms,
         # 'patients': patients,
         # 'doctors': doctors,
