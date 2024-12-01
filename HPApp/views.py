@@ -7,6 +7,7 @@ from django.http import HttpResponse,Http404
 from . import models
 from django.http import JsonResponse
 from django.core.paginator import Paginator
+import json
 
 # Create your views here.
 @login_required
@@ -59,6 +60,72 @@ def get_user_details(request, user_id):
         return JsonResponse({"success": True, "role_data": role_data, "role": user.role})
     except Exception as e:
         return JsonResponse({"success": False, "error": str(e)})
+@login_required
+def add_admin_page(request):
+    context = {}
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+
+        # Check if the email already exists
+        if models.User.objects.filter(email=email).exists():
+            context['error'] = "Email already exists."
+        else:
+            models.User.objects.create(email=email, password=password, role='user', is_staff=True, is_superuser=True)
+            context['success'] = "Admin added successfully."
+
+    return render(request, 'admin_addAdmin.html', context)
+
+@login_required
+def add_equipment_page(request):
+    context = {}
+
+    if request.method == 'POST':
+        eq_name = request.POST.get('eq_name')
+        eq_type = request.POST.get('eq_type')
+        eq_qty = request.POST.get('eq_qty')
+        eq_price = request.POST.get('eq_price')
+        department_id = request.POST.get('department')
+
+        # Validate the form data
+        if not eq_name or not eq_qty or not eq_price:
+            context['error'] = "All fields are required."
+        else:
+            try:
+                department = models.Department.objects.get(id=department_id)
+                models.Equipment.objects.create(
+                    eq_name=eq_name,
+                    eq_type=eq_type,
+                    eq_qty=int(eq_qty),
+                    eq_price=int(eq_price),
+                    department=department,
+                )
+                context['success'] = "Equipment added successfully."
+            except models.Department.DoesNotExist:
+                context['error'] = "Selected department does not exist."
+
+    # Pass all departments to the template for the department dropdown
+    context['departments'] = models.Department.objects.all()
+    return render(request, 'admin_addEquipment.html', context)
+
+@login_required
+def add_department_page(request):
+    context = {}
+
+    if request.method == 'POST':
+        dep_name = request.POST.get('dep_name')
+
+        if not dep_name:
+            context['error'] = "Department name is required."
+        else:
+            try:
+                models.Department.objects.create(dep_name=dep_name)
+                context['success'] = "Department added successfully."
+            except Exception as e:
+                context['error'] = f"An error occurred: {str(e)}"
+    
+    return render(request, 'admin_addDepartment.html', context)
 
 def patient_register(request):
     return render(request, 'patient_register.html')
@@ -87,6 +154,30 @@ def delete_user(request, user_id):
         return JsonResponse({'success': True, 'message': 'User deleted successfully'})
     else:
         return JsonResponse({'success': False, 'message': 'Error deleting user'}, status=500)
+
+@login_required
+def delete_equipment(request, equipment_id):
+    if request.method == 'POST':
+        equipment = get_object_or_404(Equipment, id=equipment_id)
+        try:
+            equipment.delete()
+            return JsonResponse({'success': True, 'message': 'Equipment deleted successfully'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': f'Error deleting equipment: {str(e)}'}, status=500)
+    else:
+        return JsonResponse({'success': False, 'message': 'Invalid request method'}, status=400)
+    
+@login_required
+def delete_department(request, department_id):
+    if request.method == 'POST':
+        department = get_object_or_404(Department, id=department_id)
+        try:
+            department.delete()
+            return JsonResponse({'success': True, 'message': 'Department deleted successfully'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': f'Error deleting department: {str(e)}'}, status=500)
+    else:
+        return JsonResponse({'success': False, 'message': 'Invalid request method'}, status=400)
 
 @login_required
 def doctor_LP(request):
@@ -151,17 +242,29 @@ def patient_LP(request):
 
 @login_required
 def admin_LP(request):
-    
     users = models.User.objects.all()
+    equipment_list = models.Equipment.objects.all()
+    department_list = models.Department.objects.all()
 
-    
-    paginator = Paginator(users, 5)
-    page_number = request.GET.get('page')  
-    page_obj = paginator.get_page(page_number)  
+    # Paginate users
+    user_paginator = Paginator(users, 5)
+    user_page_number = request.GET.get('user_page')
+    page_obj = user_paginator.get_page(user_page_number)
 
-    
+    # Paginate equipment
+    equipment_paginator = Paginator(equipment_list, 5)
+    equipment_page_number = request.GET.get('equipment_page')
+    equipment_page_obj = equipment_paginator.get_page(equipment_page_number)
+
+    # Paginate departments
+    department_paginator = Paginator(department_list, 5)
+    department_page_number = request.GET.get('department_page')
+    department_page_obj = department_paginator.get_page(department_page_number)
+
     return render(request, 'admin_LP.html', {
-        'page_obj': page_obj,  
+        'page_obj': page_obj,
+        'equipment_page_obj': equipment_page_obj,
+        'department_page_obj': department_page_obj,
         'logged_in_user': request.user,
     })
 
@@ -274,32 +377,45 @@ def register_patient(request):
 
     return render(request, 'patient_register.html')
 def login_view(request):
-    if request.method == 'POST':
-        email = request.POST.get('email')
-        password = request.POST.get('password')
+    if request.user.is_anonymous:
+        if request.method == 'POST':
+            email = request.POST.get('email')
+            password = request.POST.get('password')
 
-        user = authenticate(request, email=email, password=password)
+            user = authenticate(request, email=email, password=password)
 
-        if user is not None:
-            login(request, user)
-            role = user.role  
+            if user is not None:
+                login(request, user)
+                role = user.role  
 
-            if role == 'patient':
-                return redirect('patient_LP')
-            elif role == 'doctor':
-                return redirect('doctor_LP')
-            elif role == 'staff':
-                return redirect('staff_LP')
-            elif role == 'user':
-                return redirect('admin_LP')
+                if role == 'patient':
+                    return redirect('patient_LP')
+                elif role == 'doctor':
+                    return redirect('doctor_LP')
+                elif role == 'staff':
+                    return redirect('staff_LP')
+                elif role == 'user':
+                    return redirect('admin_LP')
+                else:
+                    error = "Invalid role."
             else:
-                error = "Invalid role."
-        else:
-            error = "Invalid email or password."
+                error = "Invalid email or password."
 
-        return render(request, 'login.html', {'error': error})
+            return render(request, 'login.html', {'error': error})
 
-    return render(request, 'login.html')
+        return render(request, 'login.html')
+    else:
+        role = request.user.role  
+
+        if role == 'patient':
+            return redirect('patient_LP')
+        elif role == 'doctor':
+            return redirect('doctor_LP')
+        elif role == 'staff':
+            return redirect('staff_LP')
+        elif role == 'user':
+            return redirect('admin_LP')
+
 
 @login_required
 def edit_patient(request):
@@ -327,7 +443,7 @@ def edit_patient(request):
             return redirect('patient_LP')
 
         return render(request,'edit_patient.html',{'user':user})
-    except Http404:
+    except models.Patient.DoesNotExist:
         return redirect('patient_register')
 
 @login_required
@@ -346,7 +462,7 @@ def edit_doctor(request):
             return redirect('doctor_LP')  
 
         return render(request, 'edit_doctor.html', {'doctor': doctor, 'departments': departments})
-    except Http404:
+    except models.Doctor.DoesNotExist:
         return redirect('doctor_register')
 
 @login_required
@@ -362,5 +478,5 @@ def edit_staff(request):
             return redirect('staff_LP')  
 
         return render(request, 'edit_staff.html', {'staff': staff})
-    except Http404:
+    except models.Staff.DoesNotExist:
         return redirect('staff_register')
