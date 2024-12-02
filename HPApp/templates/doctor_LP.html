@@ -107,12 +107,11 @@
             <h3 class="profile-name">Dr. {{ doctor.F_name }} {{ doctor.L_name }}</h3>
         </div>
         <nav class="sidebar-nav">
-            <a href="#">Home</a>
-            <a href="#">Add Appointment</a>
-            <a href="#">View Patients</a>
-            <a href="#">View Billing Records</a>
-            <a href="#">Staff Dashboard</a>
-            <a href="#">Patient Dashboard</a>
+            <a href="{% url 'doctor_LP' %}">Home</a>
+            <a href="{% url 'doctor_check_appointments' %}">View Appointments</a>
+            <a href="{% url 'doctor_view_patients' %}">View Patients</a>
+            <a href="{% url 'doctor_med_record_management' %}">View Medical Records</a>
+            <a href="{% url 'doctor_view_billing' %}">View Billing Records</a>
             <a href="{% url 'logout' %}">Logout</a>
         </nav>
     </div>
