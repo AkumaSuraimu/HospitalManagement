@@ -13,6 +13,9 @@
             background-color: #f0f0f0;
         }
         .sidebar {
+            position: sticky;
+            top: 0; /* Distance from the top when it becomes sticky */
+            height: 100vh;
             width: 250px;
             background-color: #333;
             color: #fff;
@@ -91,7 +94,7 @@
         <div class="profile" >
             <a href="{% url 'patient_edit' %}" style="text-decoration: none;">
                 <div class="profile-pic">
-                    {% if patient.profile_image %}
+                    {% if patient.profile_image != 'default.jpg' %}
                         <img src="{{ patient.profile_image.url }}" alt="Patient's profile picture">
                     {% else %}
                         {{ patient.F_name|first }}{{ patient.L_name|first }}
@@ -104,8 +107,6 @@
             <div>
                 <a href="{% url 'patient_LP' %}">Home</a>
                 <a href="{% url 'patient_book_appointment' %}">Book Appointment</a>
-                <a href="{% url 'patient_med_record' %}">View Medical Records</a>
-                <a href="{% url 'patient_view_billing' %}">View Billing Information</a>
             </div>
             <a href="{% url 'logout' %}">Logout</a>
         </nav>

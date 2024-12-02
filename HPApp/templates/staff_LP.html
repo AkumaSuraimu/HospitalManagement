@@ -13,10 +13,12 @@
             background-color: #f0f0f0;
         }
         .sidebar {
+            position: sticky;
+            top: 0;
+            height: 100vh;
             width: 250px;
             background-color: #333;
             color: #fff;
-            height: 100vh;
             padding: 20px;
             box-sizing: border-box;
         }
@@ -81,8 +83,9 @@
             border-radius: 5px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .profile-name{
+        .profile-name {
             color: #fff;
+            text-align: left;
         }
     </style>
 </head>
@@ -91,7 +94,7 @@
         <div class="profile">
             <a href="{% url 'staff_edit' %}" style="text-decoration: none;">
                 <div class="profile-pic">
-                    {% if staff.profile_image %}
+                    {% if staff.profile_image != 'default.jpg' %}
                         <img src="{{ staff.profile_image.url }}" alt="Staff's profile picture">
                     {% else %}
                         {{ staff.F_name|first }}{{ staff.L_name|first }}
@@ -100,20 +103,34 @@
             </a>
             <h3 class="profile-name">{{ staff.F_name }} {{ staff.L_name }}</h3>
         </div>
-            <nav class="sidebar-nav">
-                <a href="{% url 'staff_LP' %}">Home</a>
-                <a href="{% url 'staff_assign_room' %}">Room Assignment</a>
-                <a href="#">Add Billing</a>
-                <a href="#">View Billing Records</a>
-                <a href="#">Doctor Dashboard</a>
-                <a href="#">Patient Dashboard</a>
-                <a href="{% url 'logout' %}">Logout</a>
-            </nav>
-        </div>
+        <nav class="sidebar-nav">
+            <a href="{% url 'staff_LP' %}">Home</a>
+            <a href="{% url 'staff_assign_room' %}">Room Assignment</a>
+            <a href="{% url 'logout' %}">Logout</a>
+        </nav>
+    </div>
 
     <div class="content">
-        <h1>Welcome, {{ staff.F_name }} {{ staff.L_name }}</h1>
-        <h2>Staff Type: {{ staff.staff_type }}</h2>
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <!-- Larger Profile Picture -->
+            <div class="profile-pic" style="width: 100px; height: 100px;">
+                {% if staff.profile_image != 'default.jpg' %}
+                    <img src="{{ staff.profile_image.url }}" alt="Staff's profile picture">
+                {% else %}
+                    <span style="font-size: 40px;">{{ staff.F_name|first }}{{ staff.L_name|first }}</span>
+                {% endif %}
+            </div>
+            <div>
+                <h1>Welcome, {{ staff.F_name }} {{ staff.L_name }}</h1>
+                <h2>Staff Type: {{ staff.staff_type }}</h2>
+            </div>
+        </div>
+
+        <!-- Time In/Out Button -->
+        <div style="margin-top: 20px;">
+            <button id="timeInOutBtn" style="padding: 10px 20px; font-size: 16px;">Time In</button>
+        </div>
+
         <h3>Logged-in User: {{ user }}</h3>
 
         <h2>Rooms Assigned</h2>
@@ -128,7 +145,7 @@
         <h2>Billing Records</h2>
         <ul>
             {% for record in billing_records %}
-                <li>Patient: {{ record.patient.F_name }} {{ record.patient.L_name }}, 
+                <li>Patient: {{ record.patient.F_name }} {{ record.patient.L_name }},
                     Date: {{ record.bill_date }}, Amount: {{ record.bill_amount }}
                 </li>
             {% empty %}
@@ -136,5 +153,41 @@
             {% endfor %}
         </ul>
     </div>
+
+    <script>
+        const csrfToken = "{{ csrf_token }}";
+        document.addEventListener("DOMContentLoaded", () => {
+            const timeInOutBtn = document.getElementById("timeInOutBtn");
+            let isTimeIn = true;
+    
+            timeInOutBtn.addEventListener("click", async () => {
+                try {
+                    const response = await fetch("{% url 'update_staff_time_in_out' %}", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRFToken": csrfToken
+                        },
+                        body: JSON.stringify({
+                            staffId: "{{ staff.id }}",  // Sending staff ID dynamically
+                            action: isTimeIn ? "time_in" : "time_out"
+                        })
+                    });
+    
+                    const result = await response.json();
+    
+                    if (response.ok) {
+                        isTimeIn = !isTimeIn;
+                        timeInOutBtn.textContent = isTimeIn ? "Time In" : "Time Out";
+                    } else {
+                        alert(result.error || "An error occurred. Please try again.");  // Show error message
+                    }
+                } catch (error) {
+                    console.error("Error:", error);
+                    alert("An error occurred. Please try again.");
+                }
+            });
+        });
+    </script>
 </body>
 </html>

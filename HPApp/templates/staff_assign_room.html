@@ -13,6 +13,9 @@
                 background-color: #f0f0f0;
             }
             .sidebar {
+                position: sticky;
+                top: 0; /* Distance from the top when it becomes sticky */
+                height: 100vh;
                 width: 250px;
                 background-color: #333;
                 color: #fff;
@@ -145,8 +148,16 @@
 <body>
     <div class="sidebar">
         <div class="profile">
-            <h2 class="profile-name">--Staff--</h2>
-            <p class="profile-email">{{ user }}</p>
+            <a href="{% url 'staff_edit' %}" style="text-decoration: none;">
+                <div class="profile-pic">
+                    {% if staff.profile_image != 'default.jpg' %}
+                        <img src="{{ staff.profile_image.url }}" alt="Staff's profile picture">
+                    {% else %}
+                        {{ staff.F_name|first }}{{ staff.L_name|first }}
+                    {% endif %}
+                </div>
+            </a>
+            <h3 class="profile-name">{{ staff.F_name }} {{ staff.L_name }}</h3>
         </div>
         <nav class="sidebar-nav">
             <a href="{% url 'staff_LP' %}">Home</a>
@@ -192,25 +203,25 @@
                 <button type="submit">Assign Room</button>
             </form>
         </div>
-    </div>
-    <h2>Available Rooms</h2>
-    <table border="1" style="width: 100%; border-collapse: collapse; margin-top: 20px;">
-        <thead>
-            <tr>
-                <th>Room Type</th>
-                <th>Price</th>
-                <th>Department</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for room in rooms %}
+        <h2>Available Rooms</h2>
+        <table border="1" style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+            <thead>
                 <tr>
-                    <td>{{ room.room_type }}</td>
-                    <td>{{ room.room_price }}</td>
-                    <td>{{ room.department.dep_name }}</td>
+                    <th>Room Type</th>
+                    <th>Price</th>
+                    <th>Department</th>
                 </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                {% for room in rooms %}
+                    <tr>
+                        <td>{{ room.room_type }}</td>
+                        <td>{{ room.room_price }}</td>
+                        <td>{{ room.department.dep_name }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </body>
 </html>

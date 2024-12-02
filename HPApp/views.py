@@ -1,10 +1,14 @@
+import json
 from django.shortcuts import render,redirect
 from django.contrib.auth.hashers import check_password,make_password
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, authenticate, logout
 from django.http import HttpResponse,Http404
 from . import models
+from django.utils.timezone import now
 from django.http import JsonResponse
 from django.core.paginator import Paginator
 from datetime import datetime, timedelta
@@ -258,6 +262,8 @@ def admin_LP(request):
     users = models.User.objects.all()
     equipment_list = models.Equipment.objects.all()
     department_list = models.Department.objects.all()
+    staff_time_records = models.TimeInAndOutStaff.objects.select_related('staff').order_by('-time_in')
+    doctor_time_records = models.TimeInAndOutDoctor.objects.select_related('doctor').order_by('-time_in')
 
     # Paginate users
     user_paginator = Paginator(users, 5)
@@ -274,10 +280,22 @@ def admin_LP(request):
     department_page_number = request.GET.get('department_page')
     department_page_obj = department_paginator.get_page(department_page_number)
 
+    # Paginate time records for staff
+    staff_paginator = Paginator(staff_time_records, 5)
+    staff_page_number = request.GET.get('staff_page')
+    staff_page_obj = staff_paginator.get_page(staff_page_number)
+
+    # Paginate time records for doctors
+    doctor_paginator = Paginator(doctor_time_records, 5)
+    doctor_page_number = request.GET.get('doctor_page')
+    doctor_page_obj = doctor_paginator.get_page(doctor_page_number)
+
     return render(request, 'admin_LP.html', {
         'page_obj': page_obj,
         'equipment_page_obj': equipment_page_obj,
         'department_page_obj': department_page_obj,
+        'staff_page_obj': staff_page_obj,
+        'doctor_page_obj': doctor_page_obj,
         'logged_in_user': request.user,
     })
 
@@ -453,6 +471,10 @@ def edit_patient(request):
             user.address = address
             user.phone = phone
             user.bloodgroup = bloodgroup
+
+            # Handle image upload
+            if 'profile_image' in request.FILES:
+                user.profile_image = request.FILES['profile_image']
             user.save()
             return redirect('patient_LP')
 
@@ -472,6 +494,9 @@ def edit_doctor(request):
             doctor.L_name = request.POST.get('L_name')
             doctor.specialization = request.POST.get('specialization')
             doctor.department_id = request.POST.get('department')  
+            # Handle image upload
+            if 'profile_image' in request.FILES:
+                doctor.profile_image = request.FILES['profile_image']
             doctor.save()
             return redirect('doctor_LP')  
 
@@ -488,6 +513,9 @@ def edit_staff(request):
             staff.F_name = request.POST.get('F_name')
             staff.L_name = request.POST.get('L_name')
             staff.staff_type = request.POST.get('staff_type')
+            # Handle image upload
+            if 'profile_image' in request.FILES:
+                staff.profile_image = request.FILES['profile_image']
             staff.save()
             return redirect('staff_LP')  
 
@@ -1003,5 +1031,162 @@ def staff_assign_room(request):
         'rooms': rooms,
         # 'patients': patients,
         # 'doctors': doctors,
+        'staff': staff,
         'success_message': success_message,
     })
+    
+@require_http_methods(["GET"])
+def get_equipment_details(request, equipment_id):
+    equipment = get_object_or_404(models.Equipment, id=equipment_id)
+    departments = models.Department.objects.all().values('id', 'dep_name')
+    data = {
+        'id': equipment.id,
+        'eq_name': equipment.eq_name,
+        'eq_type': equipment.eq_type,
+        'eq_qty': equipment.eq_qty,
+        'eq_price': equipment.eq_price,
+        'department_id': equipment.department.id,
+        'department': list(departments)
+    }   
+    return JsonResponse(data)
+
+@require_http_methods(["GET"])
+def get_department_details(request, department_id):
+    department = get_object_or_404(models.Department, id=department_id)
+    data = {
+        'id': department.id,
+        'dep_name': department.dep_name
+    }
+    return JsonResponse(data)
+
+@require_http_methods(["POST"])
+def update_equipment(request):
+    if request.content_type == 'application/json':
+        data = json.loads(request.body)
+    else:
+        data = request.POST  # For form data submissions
+
+    equipment_id = data.get('id')
+    equipment = get_object_or_404(models.Equipment, id=equipment_id)
+    
+    equipment.eq_name = data.get('eq_name', equipment.eq_name)
+    equipment.eq_type = data.get('eq_type', equipment.eq_type)
+    equipment.eq_qty = data.get('eq_qty', equipment.eq_qty)
+    equipment.eq_price = data.get('eq_price', equipment.eq_price)
+    
+    department_id = data.get('department')
+    print(f"Received department_id: {department_id}")
+    if department_id:
+        try:
+            department = get_object_or_404(models.Department, id=department_id)
+            equipment.department = department
+        except models.Department.DoesNotExist:
+            print(f"Department with ID {department_id} not found.")
+    
+    equipment.save()
+    
+    return JsonResponse({'success': True, 'message': 'Equipment updated successfully'})
+
+@require_http_methods(["POST"])
+def update_department(request):
+    department_id = request.POST.get('id')
+    department_name = request.POST.get('dep_name')
+
+    if not department_id or not department_name:
+        return JsonResponse({'success': False, 'message': 'Missing required fields: id or dep_name'}, status=400)
+
+    department = get_object_or_404(models.Department, id=department_id)
+    department.dep_name = department_name
+    department.save()
+
+    return JsonResponse({'success': True, 'message': 'Department updated successfully'})
+
+@login_required
+def update_time_in_out(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        doctor_id = data.get("doctorId")
+        action = data.get("action")
+
+        try:
+            # Retrieve the doctor object
+            doctor = models.Doctor.objects.get(id=doctor_id)
+
+            if action == "time_in":
+                # Create a new time_in record with time_out set to None
+                models.TimeInAndOutDoctor.objects.create(doctor=doctor, time_in=now(), time_out=None)
+                return JsonResponse({"success": True})
+
+            elif action == "time_out":
+                # Find the last record where time_out is None (i.e., current "time_in" record)
+                record = models.TimeInAndOutDoctor.objects.filter(doctor=doctor, time_out=None).last()
+                
+                if record:
+                    # Update the last record with the current time as time_out
+                    record.time_out = now()
+                    record.save()
+                    return JsonResponse({"success": True})
+                else:
+                    return JsonResponse({"success": False, "error": "No time-in record found for this doctor."}, status=404)
+
+            else:
+                return JsonResponse({"success": False, "error": "Invalid action."}, status=400)
+
+        except models.Doctor.DoesNotExist:
+            return JsonResponse({"success": False, "error": "Doctor not found."}, status=404)
+        except Exception as e:
+            return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+    return JsonResponse({"success": False, "error": "Invalid request method."}, status=400)
+
+@login_required
+def update_staff_time_in_out(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        staff_id = data.get("staffId")
+        action = data.get("action")
+
+        try:
+            # Retrieve the staff object
+            staff = models.Staff.objects.get(id=staff_id)
+
+            if action == "time_in":
+                # Create a new time_in record with time_out set to None
+                models.TimeInAndOutStaff.objects.create(staff=staff, time_in=now(), time_out=None)
+                return JsonResponse({"success": True, "message": "Time In recorded successfully!"})
+
+            elif action == "time_out":
+                # Find the last record where time_out is None (i.e., current "time_in" record)
+                record = models.TimeInAndOutStaff.objects.filter(staff=staff, time_out=None).last()
+                
+                if record:
+                    # Update the last record with the current time as time_out
+                    record.time_out = now()
+                    record.save()
+                    return JsonResponse({"success": True, "message": "Time Out recorded successfully!"})
+                else:
+                    return JsonResponse({"success": False, "error": "No time-in record found for this staff."}, status=404)
+
+            else:
+                return JsonResponse({"success": False, "error": "Invalid action."}, status=400)
+
+        except models.Staff.DoesNotExist:
+            return JsonResponse({"success": False, "error": "Staff not found."}, status=404)
+        except Exception as e:
+            return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+    return JsonResponse({"success": False, "error": "Invalid request method."}, status=400)
+
+def delete_doctor_time_record(request, record_id):
+    if request.method == 'DELETE':
+        record = get_object_or_404(models.TimeInAndOutDoctor, id=record_id)
+        record.delete()
+        return JsonResponse({'message': 'Doctor time record deleted successfully.'}, status=200)
+    return JsonResponse({'error': 'Invalid request method.'}, status=400)
+
+def delete_staff_time_record(request, record_id):
+    if request.method == 'DELETE':
+        record = get_object_or_404(models.TimeInAndOutStaff, id=record_id)
+        record.delete()
+        return JsonResponse({'message': 'Staff time record deleted successfully.'}, status=200)
+    return JsonResponse({'error': 'Invalid request method.'}, status=400)

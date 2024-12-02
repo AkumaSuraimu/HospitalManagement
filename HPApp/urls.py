@@ -43,4 +43,14 @@ urlpatterns = [
     path('add-department/', views.add_department_page, name='admin_addDepartment'),
     path('get_user_details/<int:user_id>/', views.get_user_details, name='get_user_details'),
 
+    path('get_equipment_details/<int:equipment_id>/', views.get_equipment_details, name='get_equipment_details'),
+    path('get_department_details/<int:department_id>/', views.get_department_details, name='get_department_details'),
+    path('update_equipment/', views.update_equipment, name='update_equipment'),
+    path('update_department/', views.update_department, name='update_department'),
+
+    path('update_time_in_out/', views.update_time_in_out, name='update_time_in_out'),
+    path('staff/time-in-out/', views.update_staff_time_in_out, name='update_staff_time_in_out'),
+    path('delete-doctor-time-record/<int:record_id>/', views.delete_doctor_time_record, name='delete_doctor_time_record'),
+    path('delete-staff-time-record/<int:record_id>/', views.delete_staff_time_record, name='delete_staff_time_record'),
+
 ]

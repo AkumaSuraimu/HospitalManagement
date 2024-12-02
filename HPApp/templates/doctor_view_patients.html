@@ -13,6 +13,9 @@
                 background-color: #f0f0f0;
             }
             .sidebar {
+                position: sticky;
+                top: 0; /* Distance from the top when it becomes sticky */
+                height: 100vh;
                 width: 250px;
                 background-color: #333;
                 color: #fff;
@@ -144,12 +147,22 @@
 </head>
 <body>
     <div class="sidebar">
+        <div class="profile">
+            <a href="{% url 'doctor_edit' %}" style="text-decoration: none;">
+                <div class="profile-pic">
+                    {% if doctor.profile_image != 'default.jpg' %}
+                        <img src="{{ doctor.profile_image.url }}" alt="Doctor's profile picture">
+                    {% else %}
+                        {{ doctor.F_name|first }}{{ doctor.L_name|first }}
+                    {% endif %}
+                </div>
+            </a>
+            <h3 class="profile-name">Dr. {{ doctor.F_name }} {{ doctor.L_name }}</h3>
+        </div>
         <nav class="sidebar-nav">
             <a href="{% url 'doctor_LP' %}">Home</a>
             <a href="{% url 'doctor_check_appointments' %}">View Appointments</a>
-            <a href="{% url 'doctor_view_patients' %}">View Patients</a>
             <a href="{% url 'doctor_med_record_management' %}">View Medical Records</a>
-            <a href="{% url 'doctor_view_billing' %}">View Billing Records</a>
             <a href="{% url 'logout' %}">Logout</a>
         </nav>
     </div>

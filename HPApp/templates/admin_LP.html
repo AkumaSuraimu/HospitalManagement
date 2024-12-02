@@ -13,6 +13,9 @@
             background-color: #f0f0f0;
         }
         .sidebar {
+            position: sticky;
+            top: 0; /* Distance from the top when it becomes sticky */
+            height: 100vh;
             width: 250px;
             background-color: #333;
             color: #fff;
@@ -181,6 +184,72 @@
             transform: scale(1.05);
             transition: transform 0.3s ease-in-out;
         }
+
+        /* New styles for edit modals */
+        .edit-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+
+        .edit-modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 5px;
+        }
+
+        .close-modal {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close-modal:hover,
+        .close-modal:focus {
+            color: #000;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .edit-form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .edit-form label {
+            margin-top: 10px;
+        }
+
+        .edit-form input,
+        .edit-form select {
+            margin-bottom: 10px;
+            padding: 5px;
+        }
+
+        .edit-form button {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        .edit-form button:hover {
+            background-color: #45a049;
+        }
     </style>
 </head>
 <body>
@@ -193,9 +262,9 @@
             <a href="{% url 'admin_addAdmin' %}">Add Admin</a>
             <a href="{% url 'admin_addEquipment' %}">Add Equipment</a>
             <a href="{% url 'admin_addDepartment' %}">Add Department</a>
-            <a href="{% url 'admin_equipment_management' %}">Equipment</a>
-            <a href="{% url 'admin_room_management' %}">Rooms</a>
-            <a href="{% url 'admin_billing_management' %}">Billings</a>
+            <a href="{% url 'admin_equipment_management' %}">Add Equipment</a>
+            <a href="{% url 'admin_room_management' %}">Add Rooms</a>
+            <a href="{% url 'admin_billing_management' %}">Add Billings</a>
             <a href="{% url 'logout' %}">Logout</a>
         </nav>
     </div>
@@ -315,15 +384,17 @@
                     <td style="padding: 10px; border: 1px solid #ddd;">{{ equipment.eq_price }}</td>
                     <td style="padding: 10px; border: 1px solid #ddd;">{{ equipment.department.dep_name }}</td>
                     <td style="padding: 10px; border: 1px solid #ddd;">
-                        <button onclick="deleteEquipment('{{ equipment.id }}')" style="padding: 10px 20px; background-color: red; color: #fff; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s;">
-                            Delete Equipment
+                        <button onclick="openEquipmentEditModal('{{ equipment.id }}')" style="padding: 10px 20px; background-color: #333; color: #fff; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s;">
+                            Edit
                         </button>
-                        </form>
+                        <button onclick="deleteEquipment('{{ equipment.id }}')" style="padding: 10px 20px; background-color: red; color: #fff; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s;">
+                            Delete
+                        </button>
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="5" style="padding: 10px; text-align: center; border: 1px solid #ddd;">No equipment found.</td>
+                    <td colspan="6" style="padding: 10px; text-align: center; border: 1px solid #ddd;">No equipment found.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -335,12 +406,12 @@
             </span>
             <div style="margin-top: 15px;">
                 {% if equipment_page_obj.has_previous %}
-                <a href="?equipment_page=1" style="text-decoration: none; padding: 8px 16px; margin: 0 5px;">First</a>
-                <a href="?equipment_page={{ equipment_page_obj.previous_page_number }}" style="text-decoration: none; padding: 8px 16px; margin: 0 5px;">Previous</a>
+                <a href="?equipment_page=1" style="text-decoration: none; padding: 8px 16px; margin: 0 5px; border: 1px solid #ccc; border-radius: 4px; background-color: #f4f4f4; color: #333; font-weight: bold; transition: all 0.3s;">First</a>
+                <a href="?equipment_page={{ equipment_page_obj.previous_page_number }}" style="text-decoration: none; padding: 8px 16px; margin: 0 5px; border: 1px solid #ccc; border-radius: 4px; background-color: #f4f4f4; color: #333; font-weight: bold; transition: all 0.3s;">Previous</a>
                 {% endif %}
                 {% if equipment_page_obj.has_next %}
-                <a href="?equipment_page={{ equipment_page_obj.next_page_number }}" style="text-decoration: none; padding: 8px 16px; margin: 0 5px;">Next</a>
-                <a href="?equipment_page={{ equipment_page_obj.paginator.num_pages }}" style="text-decoration: none; padding: 8px 16px; margin: 0 5px;">Last</a>
+                <a href="?equipment_page={{ equipment_page_obj.next_page_number }}" style="text-decoration: none; padding: 8px 16px; margin: 0 5px; border: 1px solid #ccc; border-radius: 4px; background-color: #f4f4f4; color: #333; font-weight: bold; transition: all 0.3s;">Next</a>
+                <a href="?equipment_page={{ equipment_page_obj.paginator.num_pages }}" style="text-decoration: none; padding: 8px 16px; margin: 0 5px; border: 1px solid #ccc; border-radius: 4px; background-color: #f4f4f4; color: #333; font-weight: bold; transition: all 0.3s;">Last</a>
                 {% endif %}
             </div>
         </div>
@@ -357,16 +428,17 @@
                 <tr>
                     <td style="padding: 10px; border: 1px solid #ddd;">{{ department.dep_name }}</td>
                     <td style="padding: 10px; border: 1px solid #ddd;">
-                        <form method="POST" action="{% url 'delete_department' department.id %}" style="display: inline;">
-                           {% csrf_token %}
-                            <button onclick="deleteDepartment('{{ department.id }}')" style="padding: 10px 20px; background-color: red; color: #fff; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s;">
-                                Delete Department
-                            </button>
+                        <button onclick="openDepartmentEditModal('{{ department.id }}')" style="padding: 10px 20px; background-color: #333; color: #fff; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s;">
+                            Edit
+                        </button>
+                        <button onclick="deleteDepartment('{{ department.id }}')" style="padding: 10px 20px; background-color: red; color: #fff; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s;">
+                            Delete
+                        </button>
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="1" style="padding: 10px; text-align: center; border: 1px solid #ddd;">No departments found.</td>
+                    <td colspan="2" style="padding: 10px; text-align: center; border: 1px solid #ddd;">No departments found.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -378,207 +450,484 @@
             </span>
             <div style="margin-top: 15px;">
                 {% if department_page_obj.has_previous %}
-                <a href="?department_page=1" style="text-decoration: none; padding: 8px 16px; margin: 0 5px;">First</a>
-                <a href="?department_page={{ department_page_obj.previous_page_number }}" style="text-decoration: none; padding: 8px 16px; margin: 0 5px;">Previous</a>
+                <a href="?department_page=1" style="text-decoration: none; padding: 8px 16px; margin: 0 5px; border: 1px solid #ccc; border-radius: 4px; background-color: #f4f4f4; color: #333; font-weight: bold; transition: all 0.3s;">First</a>
+                <a href="?department_page={{ department_page_obj.previous_page_number }}" style="text-decoration: none; padding: 8px 16px; margin: 0 5px; border: 1px solid #ccc; border-radius: 4px; background-color: #f4f4f4; color: #333; font-weight: bold; transition: all 0.3s;">Previous</a>
                 {% endif %}
                 {% if department_page_obj.has_next %}
-                <a href="?department_page={{ department_page_obj.next_page_number }}" style="text-decoration: none; padding: 8px 16px; margin: 0 5px;">Next</a>
-                <a href="?department_page={{ department_page_obj.paginator.num_pages }}" style="text-decoration: none; padding: 8px 16px; margin: 0 5px;">Last</a>
+                <a href="?department_page={{ department_page_obj.next_page_number }}" style="text-decoration: none; padding: 8px 16px; margin: 0 5px; border: 1px solid #ccc; border-radius: 4px; background-color: #f4f4f4; color: #333; font-weight: bold; transition: all 0.3s;">Next</a>
+                <a href="?department_page={{ department_page_obj.paginator.num_pages }}" style="text-decoration: none; padding: 8px 16px; margin: 0 5px; border: 1px solid #ccc; border-radius: 4px; background-color: #f4f4f4; color: #333; font-weight: bold; transition: all 0.3s;">Last</a>
+                {% endif %}
+            </div>
+        </div>
+        <h2>Staff Time Records</h2>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+            <thead>
+                <tr style="background-color: #f4f4f4; border-bottom: 2px solid #ccc;">
+                    <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Staff Name</th>
+                    <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Time In</th>
+                    <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Time Out</th>
+                    <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in staff_page_obj %}
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #ddd;">{{ record.staff.F_name }} {{ record.staff.L_name }}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">{{ record.time_in }}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">{{ record.time_out }}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">
+                        <button onclick="deleteStaffTimeRecord('{{ record.id }}')" style="padding: 10px 20px; background-color: red; color: #fff; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s;">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" style="padding: 10px; text-align: center; border: 1px solid #ddd;">No staff time records found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div style="text-align: center; margin-top: 20px;">
+            <span style="font-size: 16px; color: #333; font-weight: bold;">
+                Page {{ staff_page_obj.number }} of {{ staff_page_obj.paginator.num_pages }}
+            </span>
+            <div style="margin-top: 15px;">
+                {% if staff_page_obj.has_previous %}
+                <a href="?staff_page=1" style="text-decoration: none; padding: 8px 16px; margin: 0 5px; border: 1px solid #ccc; border-radius: 4px; background-color: #f4f4f4; color: #333; font-weight: bold; transition: all 0.3s;">First</a>
+                <a href="?staff_page={{ staff_page_obj.previous_page_number }}" style="text-decoration: none; padding: 8px 16px; margin: 0 5px; border: 1px solid #ccc; border-radius: 4px; background-color: #f4f4f4; color: #333; font-weight: bold; transition: all 0.3s;">Previous</a>
+                {% endif %}
+                {% if staff_page_obj.has_next %}
+                <a href="?staff_page={{ staff_page_obj.next_page_number }}" style="text-decoration: none; padding: 8px 16px; margin: 0 5px; border: 1px solid #ccc; border-radius: 4px; background-color: #f4f4f4; color: #333; font-weight: bold; transition: all 0.3s;">Next</a>
+                <a href="?staff_page={{ staff_page_obj.paginator.num_pages }}" style="text-decoration: none; padding: 8px 16px; margin: 0 5px; border: 1px solid #ccc; border-radius: 4px; background-color: #f4f4f4; color: #333; font-weight: bold; transition: all 0.3s;">Last</a>
+                {% endif %}
+            </div>
+        </div>
+        <h2>Doctor Time Records</h2>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+            <thead>
+                <tr style="background-color: #f4f4f4; border-bottom: 2px solid #ccc;">
+                    <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Doctor Name</th>
+                    <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Time In</th>
+                    <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Time Out</th>
+                    <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in doctor_page_obj %}
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #ddd;">{{ record.doctor.F_name }} {{ record.doctor.L_name }}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">{{ record.time_in }}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">{{ record.time_out }}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">
+                        <button onclick="deleteDoctorTimeRecord('{{ record.id }}')" style="padding: 10px 20px; background-color: red; color: #fff; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s;">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" style="padding: 10px; text-align: center; border: 1px solid #ddd;">No doctor time records found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div style="text-align: center; margin-top: 20px;">
+            <span style="font-size: 16px; color: #333; font-weight: bold;">
+                Page {{ doctor_page_obj.number }} of {{ doctor_page_obj.paginator.num_pages }}
+            </span>
+            <div style="margin-top: 15px;">
+                {% if doctor_page_obj.has_previous %}
+                <a href="?doctor_page=1" style="text-decoration: none; padding: 8px 16px; margin: 0 5px; border: 1px solid #ccc; border-radius: 4px; background-color: #f4f4f4; color: #333; font-weight: bold; transition: all 0.3s;">First</a>
+                <a href="?doctor_page={{ doctor_page_obj.previous_page_number }}" style="text-decoration: none; padding: 8px 16px; margin: 0 5px; border: 1px solid #ccc; border-radius: 4px; background-color: #f4f4f4; color: #333; font-weight: bold; transition: all 0.3s;">Previous</a>
+                {% endif %}
+                {% if doctor_page_obj.has_next %}
+                <a href="?doctor_page={{ doctor_page_obj.next_page_number }}" style="text-decoration: none; padding: 8px 16px; margin: 0 5px; border: 1px solid #ccc; border-radius: 4px; background-color: #f4f4f4; color: #333; font-weight: bold; transition: all 0.3s;">Next</a>
+                <a href="?doctor_page={{ doctor_page_obj.paginator.num_pages }}" style="text-decoration: none; padding: 8px 16px; margin: 0 5px; border: 1px solid #ccc; border-radius: 4px; background-color: #f4f4f4; color: #333; font-weight: bold; transition: all 0.3s;">Last</a>
                 {% endif %}
             </div>
         </div>
     </div>
-</body>
-</html>
-<script>
-    let userToDeleteId = null; 
-    const csrfToken = "{{ csrf_token }}";
-    function fetchUserDetails(userId) {
-        fetch(`/get_user_details/${userId}/`, {
-            method: 'GET',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log(data.role_data);
-            const modal = document.getElementById("userDetailsModal");
-            const modalContent = document.getElementById("modalContent");
-            if (data.success) {
-                let detailsHtml = `<p><strong>Role:</strong> ${data.role}</p>`;
-                for (const [key, value] of Object.entries(data.role_data)) {
-                    detailsHtml += `<p><strong>${key}:</strong> ${value}</p>`;
-                }
-                modalContent.innerHTML = detailsHtml;
-            } else {
-                let detailsHtml = `<p><strong>${data.error}</p>`;
-                modalContent.innerHTML = detailsHtml;
-            }
+    
+
+    <!-- Equipment Edit Modal -->
+    <div id="equipmentEditModal" class="edit-modal">
+        <div class="edit-modal-content">
+            <span class="close-modal" onclick="closeEquipmentEditModal()">&times;</span>
+            <h2>Edit Equipment</h2>
+            <form id="equipmentEditForm" class="edit-form">
+                <input type="hidden" id="equipmentId" name="id">
+                <label for="eq_name">Name:</label>
+                <input type="text" id="eq_name" name="eq_name" >
+                <label for="eq_type">Type:</label>
+                <input type="text" id="eq_type" name="eq_type" >
+                <label for="eq_qty">Quantity:</label>
+                <input type="number" id="eq_qty" name="eq_qty" >
+                <label for="eq_price">Price:</label>
+                <input type="number" id="eq_price" name="eq_price" >
+                <label for="department">Department:</label>
+                <select id="department" name="department" ></select>
+                <button type="submit">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Department Edit Modal -->
+    <div id="departmentEditModal" class="edit-modal">
+        <div class="edit-modal-content">
+            <span class="close-modal" onclick="closeDepartmentEditModal()">&times;</span>
+            <h2>Edit Department</h2>
+            <form id="departmentEditForm" class="edit-form">
+                <input type="hidden" id="departmentId" name="id">
+                <label for="dep_name">Name:</label>
+                <input type="text" id="dep_name" name="dep_name" required>
+                <button type="submit">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const csrfToken = "{{ csrf_token }}";
+        
+        // Equipment Edit Modal Functions
+        function openEquipmentEditModal(equipmentId) {
+            const modal = document.getElementById('equipmentEditModal');
+            modal.style.display = 'block';
             
-            // Display the modal with animation
-            modal.style.display = "flex";
-            setTimeout(() => {
-                modal.classList.add("show");
-            }, 10); // Slight delay to trigger animation
-        })
-        .catch(error => {
-            alert("Error fetching details: " + error);
-        });
-    }
-
-    function closeModal() {
-        const modal = document.getElementById("userDetailsModal");
-        modal.classList.remove("show");
-        setTimeout(() => {
-            modal.style.display = "none";
-        }, 300); // Wait for the transition to finish before hiding the modal
-    }
-    function deleteUser(userId) {
-        userToDeleteId = userId;  
-        const modal = document.getElementById("deleteConfirmationModal");
-        modal.style.display = "flex";  
-    }
-
-    function closeDeleteModal() {
-        const modal = document.getElementById("deleteConfirmationModal");
-        modal.style.display = "none"; 
-    }
-
-    function confirmDeleteUser() {
-        //console.log(csrfToken);
-        if (userToDeleteId !== null) {
-            fetch(`/delete_user/${userToDeleteId}/`, {
-                method: 'POST',
+            // Fetch equipment details and populate the form
+            fetch(`/get_equipment_details/${equipmentId}/`, {
+                method: 'GET',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
-                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('equipmentId').value = data.id;
+                document.getElementById('eq_name').value = data.eq_name;
+                document.getElementById('eq_type').value = data.eq_type;
+                document.getElementById('eq_qty').value = data.eq_qty;
+                document.getElementById('eq_price').value = data.eq_price;
+                
+                // Populate departments dropdown
+                const departmentSelect = document.getElementById('department');
+                departmentSelect.innerHTML = ''; // Clear existing options
+                data.department.forEach(department => {
+                    const option = document.createElement('option');
+                    option.value = department.id;
+                    option.textContent = department.dep_name;
+                    if (department.id === data.department_id) {
+                        option.selected = true; // Select current department
+                    }
+                    departmentSelect.appendChild(option);
+                });
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function closeEquipmentEditModal() {
+            const modal = document.getElementById('equipmentEditModal');
+            modal.style.display = 'none';
+        }
+
+        document.getElementById('equipmentEditForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            
+            fetch('/update_equipment/', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
                     'X-CSRFToken': csrfToken
                 }
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showMessageInModal(data.message);
-                    setTimeout(() => {
-                        location.reload(); // Reload the page after success
-                    }, 2000); // Allow time for message to show before reloading 
+                    closeEquipmentEditModal();
+                    location.reload(); // Reload the page to show updated data
                 } else {
-                    showMessageInModal(data.message);
+                    alert('Failed to update equipment');
                 }
-                closeDeleteModal(); 
             })
-            .catch(error => {
-                showMessageInModal("Error deleting user: " + error.message);
-                closeDeleteModal();    
-            });
-        }
-    }
-    function showMessageInModal(message) {
-        const modal = document.getElementById("deleteMessageModal");
-        const modalContent = document.getElementById("modalMessageContent");
-        
-        
-        modalContent.innerHTML = `<p>${message}</p>`;
-        
-       
-        modal.style.display = "flex";
-        setTimeout(() => {
-            modal.classList.add("show");
-        }, 10); 
-    }
+            .catch(error => console.error('Error:', error));
+        });
 
-    function closeMessageModal() {
-        const modal = document.getElementById("deleteMessageModal");
-        modal.classList.remove("show");
-        setTimeout(() => {
-            modal.style.display = "none";
-        }, 300); 
-    }
-
-    
-    function deleteEquipment(equipmentId) {
-        // Open the confirmation modal
-        const confirmationModal = document.getElementById('deleteConfirmationModal');
-        confirmationModal.style.display = 'flex';
-
-        // Set the delete action for the confirmation modal
-        const deleteConfirmBtn = document.getElementById('deleteConfirmBtn');
-        deleteConfirmBtn.onclick = function () {
-            // Make an AJAX request to delete the equipment
-            fetch(`/delete_equipment/${equipmentId}/`, {
-                method: 'DELETE',
+        // Department Edit Modal Functions
+        function openDepartmentEditModal(departmentId) {
+            const modal = document.getElementById('departmentEditModal');
+            modal.style.display = 'block';
+            
+            // Fetch department details and populate the form
+            fetch(`/get_department_details/${departmentId}/`, {
+                method: 'GET',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
                     'X-CSRFToken': csrfToken
-                },
+                }
             })
             .then(response => response.json())
             .then(data => {
-                // Close the confirmation modal
-                closeDeleteModal();
-                // Show success message
-                openMessageModal('Equipment deleted successfully');
-                // Optionally, reload the page or update the equipment list
-                location.reload();
+                document.getElementById('departmentId').value = data.id;
+                document.getElementById('dep_name').value = data.dep_name;
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function closeDepartmentEditModal() {
+            const modal = document.getElementById('departmentEditModal');
+            modal.style.display = 'none';
+        }
+
+        document.getElementById('departmentEditForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            fetch('/update_department/', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrfToken
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    closeDepartmentEditModal();
+                    location.reload(); // Reload the page to show updated data
+                } else {
+                    alert('Failed to update department');
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        let userToDeleteId = null; 
+
+        function fetchUserDetails(userId) {
+            fetch(`/get_user_details/${userId}/`, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data.role_data);
+                const modal = document.getElementById("userDetailsModal");
+                const modalContent = document.getElementById("modalContent");
+                if (data.success) {
+                    let detailsHtml = `<p><strong>Role:</strong> ${data.role}</p>`;
+                    for (const [key, value] of Object.entries(data.role_data)) {
+                        detailsHtml += `<p><strong>${key}:</strong> ${value}</p>`;
+                    }
+                    modalContent.innerHTML = detailsHtml;
+                } else {
+                    let detailsHtml = `<p><strong>${data.error}</p>`;
+                    modalContent.innerHTML = detailsHtml;
+                }
+                
+                // Display the modal with animation
+                modal.style.display = "flex";
+                setTimeout(() => {
+                    modal.classList.add("show");
+                }, 10); // Slight delay to trigger animation
             })
             .catch(error => {
-                console.error('Error:', error);
-                closeDeleteModal();
-                openMessageModal('Failed to delete equipment');
+                alert("Error fetching details: " + error);
             });
-        };
-    }
+        }
 
-    function deleteDepartment(departmentId) {
-    event.preventDefault();
-    // Open the confirmation modal
-    const confirmationModal = document.getElementById('deleteConfirmationModal');
-    confirmationModal.style.display = 'flex';
+        function closeModal() {
+            const modal = document.getElementById("userDetailsModal");
+            modal.classList.remove("show");
+            setTimeout(() => {
+                modal.style.display = "none";
+            }, 300); // Wait for the transition to finish before hiding the modal
+        }
 
-    // Set the delete action for the confirmation modal
-    const deleteConfirmBtn = document.getElementById('deleteConfirmBtn');
-    deleteConfirmBtn.onclick = function () {
-        console.log('Deleting department with ID:', departmentId);  // Debugging log
-        // Make an AJAX request to delete the department
-        fetch(`/delete_department/${departmentId}/`, {
+        function deleteUser(userId) {
+            userToDeleteId = userId;  
+            const modal = document.getElementById("deleteConfirmationModal");
+            modal.style.display = "flex";  
+        }
+
+        function closeDeleteModal() {
+            const modal = document.getElementById("deleteConfirmationModal");
+            modal.style.display = "none"; 
+        }
+
+        function confirmDeleteUser() {
+            if (userToDeleteId !== null) {
+                fetch(`/delete_user/${userToDeleteId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showMessageInModal(data.message);
+                        setTimeout(() => {
+                            location.reload(); // Reload the page after success
+                        }, 2000); // Allow time for message to show before reloading 
+                    } else {
+                        showMessageInModal(data.message);
+                    }
+                    closeDeleteModal(); 
+                })
+                .catch(error => {
+                    showMessageInModal("Error deleting user: " + error.message);
+                    closeDeleteModal();    
+                });
+            }
+        }
+
+        function showMessageInModal(message) {
+            const modal = document.getElementById("deleteMessageModal");
+            const modalContent = document.getElementById("modalMessageContent");
+            
+            modalContent.innerHTML = `<p>${message}</p>`;
+            
+            modal.style.display = "flex";
+            setTimeout(() => {
+                modal.classList.add("show");
+            }, 10); 
+        }
+
+        function closeMessageModal() {
+            const modal = document.getElementById("deleteMessageModal");
+            modal.classList.remove("show");
+            setTimeout(() => {
+                modal.style.display = "none";
+            }, 300); 
+        }
+
+        function deleteEquipment(equipmentId) {
+            // Open the confirmation modal
+            const confirmationModal = document.getElementById('deleteConfirmationModal');
+            confirmationModal.style.display = 'flex';
+
+            // Set the delete action for the confirmation modal
+            const deleteConfirmBtn = document.getElementById('deleteConfirmBtn');
+            deleteConfirmBtn.onclick = function () {
+                // Make an AJAX request to delete the equipment
+                fetch(`/delete_equipment/${equipmentId}/`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Close the confirmation modal
+                    closeDeleteModal();
+                    // Show success message
+                    openMessageModal('Equipment deleted successfully');
+                    // Optionally, reload the page or update the equipment list
+                    location.reload();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    closeDeleteModal();
+                    openMessageModal('Failed to delete equipment');
+                });
+            };
+        }
+
+        function deleteDepartment(departmentId) {
+            event.preventDefault();
+            // Open the confirmation modal
+            const confirmationModal = document.getElementById('deleteConfirmationModal');
+            confirmationModal.style.display = 'flex';
+
+            // Set the delete action for the confirmation modal
+            const deleteConfirmBtn = document.getElementById('deleteConfirmBtn');
+            deleteConfirmBtn.onclick = function () {
+                console.log('Deleting department with ID:', departmentId);  // Debugging log
+                // Make an AJAX request to delete the department
+                fetch(`/delete_department/${departmentId}/`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken // Ensure this token is correctly embedded
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Close the confirmation modal
+                    closeDeleteModal();
+                    // Show success message
+                    openMessageModal('Department deleted successfully');
+                    // Optionally, reload the page or update the equipment list
+                    location.reload();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    closeDeleteModal();
+                    openMessageModal('Failed to delete department');
+                });
+            };
+        }
+
+        function openMessageModal(message) {
+            const messageModal = document.getElementById('deleteMessageModal');
+            document.getElementById('modalMessageContent').innerText = message;
+            messageModal.style.display = 'flex';
+        }
+
+        function closeMessageModal() {
+            const messageModal = document.getElementById('deleteMessageModal');
+            messageModal.style.display = 'none';
+        }
+
+        function closeDeleteModal() {
+            const confirmationModal = document.getElementById('deleteConfirmationModal');
+            confirmationModal.style.display = 'none';
+        }
+        function deleteDoctorTimeRecord(recordId) {
+        const url = `/delete-doctor-time-record/${recordId}/`;
+        fetch(url, {
             method: 'DELETE',
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken // Ensure this token is correctly embedded
+                'X-CSRFToken': csrfToken, // Include CSRF token
             },
         })
-        .then(response => response.json())
-        .then(data => {
-                // Close the confirmation modal
-                closeDeleteModal();
-                // Show success message
-                openMessageModal('Department deleted successfully');
-                // Optionally, reload the page or update the equipment list
-                location.reload();
+        .then(response => {
+            if (response.ok) {
+                location.reload(); // Refresh the page to reflect changes
+            } else {
+                alert('Failed to delete doctor time record.');
+            }
         })
-        .catch(error => {
-            console.error('Error:', error);
-            closeDeleteModal();
-            openMessageModal('Failed to delete department');
-        });
-    };
-}
-
-    function openMessageModal(message) {
-        const messageModal = document.getElementById('deleteMessageModal');
-        document.getElementById('modalMessageContent').innerText = message;
-        messageModal.style.display = 'flex';
+        .catch(error => console.error('Error:', error));
     }
 
-    function closeMessageModal() {
-        const messageModal = document.getElementById('deleteMessageModal');
-        messageModal.style.display = 'none';
+    function deleteStaffTimeRecord(recordId) {
+        const url = `/delete-staff-time-record/${recordId}/`;
+        fetch(url, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': csrfToken, // Include CSRF token
+            },
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload(); // Refresh the page to reflect changes
+            } else {
+                alert('Failed to delete staff time record.');
+            }
+        })
+        .catch(error => console.error('Error:', error));
     }
-
-    function closeDeleteModal() {
-        const confirmationModal = document.getElementById('deleteConfirmationModal');
-        confirmationModal.style.display = 'none';
-    }
-</script>
-
+    </script>
+</body>
+</html>

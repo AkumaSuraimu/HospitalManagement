@@ -13,6 +13,9 @@
             background-color: #f0f0f0;
         }
         .sidebar {
+            position: sticky;
+            top: 0; /* Distance from the top when it becomes sticky */
+            height: 100vh;
             width: 250px;
             background-color: #333;
             color: #fff;
@@ -118,14 +121,56 @@
         .delete-btn:hover {
             background-color: #bc1a1a;
         }
-
+        .profile-pic-container {
+            width: 150px;
+            height: 150px;
+            margin-bottom: 20px;
+            position: relative;
+            cursor: pointer;
+        }
+        .profile-pic-circle {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background-color: #555;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            color: #fff;
+            overflow: hidden;
+        }
+        .profile-pic-circle img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .change-profile-text {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            text-align: center;
+            padding: 5px;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .profile-pic-container:hover .change-profile-text {
+            opacity: 1;
+        }
+        #profile_image {
+            display: none;
+        }
     </style>
 </head>
 <body>
     <div class="sidebar">
         <div class="profile">
             <div class="profile-pic">
-                {% if staff.profile_image %}
+                {% if staff.profile_image != 'default.jpg' %}
                     <img src="{{ staff.profile_image.url }}" alt="Staff's profile picture">
                 {% else %}
                     {{ staff.F_name|first }}{{ staff.L_name|first }}
@@ -134,19 +179,27 @@
             <h3>{{ staff.F_name }} {{ staff.L_name }}</h3>
         </div>
         <nav class="sidebar-nav">
-            <a href="#">Home</a>
-            <a href="#">Add Room</a>
-            <a href="#">Add Billing</a>
-            <a href="#">View Rooms</a>
-            <a href="#">View Billing Records</a>
+            <a href="{% url 'staff_LP' %}">Home</a>
+            <a href="{% url 'staff_assign_room' %}">Room Assignment</a>
             <a href="{% url 'logout' %}">Logout</a>
         </nav>
     </div>
 
     <div class="content">
         <h1>Edit Staff Profile</h1>
-        <form method="POST">
+        <form method="POST" enctype="multipart/form-data">
             {% csrf_token %}
+            <div class="profile-pic-container">
+                <label for="profile_image" class="profile-pic-circle" id="profile-pic-label">
+                    {% if staff.profile_image != 'default.jpg' %}
+                        <img src="{{ staff.profile_image.url }}" alt="Staff's profile picture" id="profile-pic-preview">
+                    {% else %}
+                        <span id="profile-pic-initials">{{ staff.F_name|first }}{{ staff.L_name|first }}</span>
+                    {% endif %}
+                </label>
+                <div class="change-profile-text">Change Profile Picture</div>
+                <input type="file" id="profile_image" name="profile_image" accept="image/*" onchange="previewImage(this)">
+            </div>
             <div>
                 <label for="F_name">First Name:</label>
                 <input type="text" id="F_name" name="F_name" value="{{ staff.F_name }}" required>
@@ -166,5 +219,34 @@
             </div>
         </form>
     </div>
+
+    <script>
+        function previewImage(input) {
+            const preview = document.getElementById('profile-pic-preview');
+            const initials = document.getElementById('profile-pic-initials');
+            const label = document.getElementById('profile-pic-label');
+
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    if (preview) {
+                        preview.src = e.target.result;
+                    } else {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.id = 'profile-pic-preview';
+                        img.alt = "Staff's profile picture";
+                        label.innerHTML = '';
+                        label.appendChild(img);
+                    }
+                    if (initials) {
+                        initials.style.display = 'none';
+                    }
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+    </script>
 </body>
 </html>
+

@@ -51,12 +51,14 @@ class Patient(models.Model):
     phone = models.CharField(max_length=20, default='0000000000')
     bloodgroup = models.CharField(max_length=10, default='Unknown')
     room = models.ForeignKey('Room', on_delete=models.SET_NULL, null=True) 
+    profile_image = models.ImageField(upload_to='doctor_images/', default='default.jpg')
     user = models.ForeignKey(User, null=True, on_delete=models.CASCADE)
 
 class Staff(models.Model):
     staff_type = models.CharField(max_length=100, default='General')
     F_name = models.CharField(max_length=100, default='Unknown')
     L_name = models.CharField(max_length=100, default='Unknown')
+    profile_image = models.ImageField(upload_to='doctor_images/', default='default.jpg')
     user = models.ForeignKey(User, null=True, on_delete=models.CASCADE)
 
 class Department(models.Model):
@@ -66,6 +68,7 @@ class Doctor(models.Model):
     F_name = models.CharField(max_length=100, default='Unknown')
     L_name = models.CharField(max_length=100, default='Unknown')
     specialization = models.CharField(max_length=100, default='General')
+    profile_image = models.ImageField(upload_to='doctor_images/', default='default.jpg')
     department = models.ForeignKey(Department, on_delete=models.CASCADE, null=True, default=None)
     user = models.ForeignKey(User, null=True, on_delete=models.CASCADE)
 
@@ -102,3 +105,13 @@ class MedicalRecord(models.Model):
     doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, null=True, default=None)
     date = models.DateField(default=timezone.now)
     details = models.CharField(max_length=511)
+
+class TimeInAndOutDoctor(models.Model):
+    time_in = models.TimeField(default=timezone.now)
+    time_out = models.TimeField(null=True, blank=True)
+    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE)
+
+class TimeInAndOutStaff(models.Model):
+    time_in = models.TimeField(default=timezone.now)
+    time_out = models.TimeField(null=True, blank=True)
+    staff = models.ForeignKey(Staff, on_delete=models.CASCADE)
